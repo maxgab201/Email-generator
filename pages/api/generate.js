@@ -5,6 +5,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
+  // Asegurate de que en Vercel la variable tenga  (¡con hf en minúscula!)
   const apiKey = process.env.HUGGINGFACE_API_KEY;
   if (!apiKey) {
     return res.status(500).json({ error: "HUGGINGFACE_API_KEY not configured." });
@@ -16,9 +17,9 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Usamos Qwen 2.5, un modelo espectacular, rapidísimo y sin restricciones
+    // Usamos Zephyr 7B: excelente para textos, nunca pide aceptar términos y la ruta es simple
     const response = await fetch(
-      "https://api-inference.huggingface.co/models/Qwen/Qwen2.5-7B-Instruct/v1/chat/completions",
+      "https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta",
       {
         method: "POST",
         headers: {
@@ -26,29 +27,35 @@ export default async function handler(req, res) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "Qwen/Qwen2.5-7B-Instruct",
-          messages: [{ role: "user", content: prompt }],
-          max_tokens: 800,
-          temperature: 0.7
+          inputs: `<|system|>\nYou are an expert email writer.\n<|user|>\n${prompt}\n<|assistant|>\n`,
+          parameters: {
+            max_new_tokens: 800,
+            temperature: 0.7,
+            return_full_text: false
+          }
         }),
       }
     );
 
-    // Leemos la respuesta como texto primero para evitar el error <!DOCTYPE HTML>
     const textResponse = await response.text();
     
     let data;
     try {
       data = JSON.parse(textResponse);
     } catch (e) {
-      return res.status(500).json({ error: "Hugging Face devolvió una página web en lugar de datos. Revisá que tu API Key empiece con 'hf_' en minúscula." });
+      // Si llegás a ver esto, significa que el token en Vercel sigue con algún espacio en blanco o mayúscula
+      return res.status(500).json({ error: "Error de conexión. Chequeá que en Vercel el token sea exacto: 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" });
     }
 
     if (!response.ok) {
-      return res.status(response.status).json({ error: data.error || "Error de Hugging Face." });
+      const errorMsg = data.error?.includes("is currently loading") 
+        ? "El servidor de Hugging Face se está encendiendo. Esperá 20 segundos y volvé a darle a generar." 
+        : (data.error || "Error de la API de Hugging Face.");
+      return res.status(response.status).json({ error: errorMsg });
     }
 
-    const text = data.choices?.[0]?.message?.content;
+    // Hugging face devuelve un array en este endpoint
+    const text = data[0]?.generated_text;
 
     if (!text) {
       return res.status(500).json({ error: "El modelo no generó respuesta." });
