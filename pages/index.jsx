@@ -6,8 +6,7 @@ const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 const VOCAB_COMPLEXITY = ["Simple", "Intermediate", "Complex"];
 
 export default function Home() {
-  // --- ESTADOS ---
-  const [currentView, setCurrentView] = useState("generator"); // 'generator' o 'history'
+  const [currentView, setCurrentView] = useState("generator");
   const [history, setHistory] = useState([]);
   
   const [form, setForm] = useState({
@@ -19,15 +18,11 @@ export default function Home() {
   const [error, setError] = useState(null);
   const resultRef = useRef(null);
 
-  // --- CARGAR HISTORIAL (Al iniciar) ---
   useEffect(() => {
     const savedHistory = localStorage.getItem("mailcraft_history");
-    if (savedHistory) {
-      setHistory(JSON.parse(savedHistory));
-    }
+    if (savedHistory) setHistory(JSON.parse(savedHistory));
   }, []);
 
-  // --- LÓGICA DEL FORMULARIO ---
   const handleChange = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     setError(null);
@@ -57,7 +52,6 @@ export default function Home() {
       const newEmail = data.result;
       setResult(newEmail);
       
-      // Guardar en Historial
       const newRecord = {
         id: Date.now(),
         date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
@@ -78,12 +72,15 @@ export default function Home() {
     }
   };
 
-  // --- LÓGICA DEL HISTORIAL ---
   const deleteHistoryItem = (id) => {
     const updatedHistory = history.filter(item => item.id !== id);
     setHistory(updatedHistory);
     localStorage.setItem("mailcraft_history", JSON.stringify(updatedHistory));
   };
+
+  // Índices matemáticos para calcular a dónde se tiene que deslizar el fondo
+  const levelIndex = LEVELS.indexOf(form.nivel);
+  const vocabIndex = VOCAB_COMPLEXITY.indexOf(form.vocabulario);
 
   return (
     <div className="bg-background text-on-surface font-body min-h-screen flex antialiased selection:bg-primary-container selection:text-on-primary-container dark h-screen w-full overflow-hidden">
@@ -164,6 +161,7 @@ export default function Home() {
 
             <div className="bg-surface-container rounded-xl p-6 md:p-8 shadow-[0_20px_40px_rgba(0,0,0,0.4)] backdrop-blur-sm">
               <form className="space-y-8" onSubmit={handleGenerate}>
+                
                 <div className="space-y-2">
                   <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest">TOPIC / ASSIGNMENT</label>
                   <textarea value={form.consigna} onChange={(e) => handleChange("consigna", e.target.value)} className="w-full bg-surface-container-low border-0 rounded-lg p-4 text-on-surface focus:ring-1 focus:ring-primary/40 focus:bg-surface-container-highest transition-all resize-none shadow-inner outline-none" placeholder="e.g. Write an email to the marketing team requesting an update..." rows="4" />
@@ -182,12 +180,21 @@ export default function Home() {
                     </div>
                   </div>
 
+                  {/* ANIMACIÓN 1: CANTIDAD DE PALABRAS */}
                   <div className="space-y-2">
                     <div className="flex justify-between items-center mb-2">
                       <label className="text-xs font-bold text-on-surface-variant uppercase tracking-widest">LENGTH (WORDS)</label>
-                      <div className="flex bg-surface-container-highest rounded p-0.5">
-                        <button type="button" onClick={() => handleChange("longitudType", "range")} className={`px-3 py-1 text-[10px] font-bold rounded uppercase tracking-wider transition-colors ${form.longitudType === "range" ? "bg-primary-container text-on-primary-fixed shadow-sm" : "text-on-surface-variant hover:text-on-surface"}`}>Range</button>
-                        <button type="button" onClick={() => handleChange("longitudType", "specific")} className={`px-3 py-1 text-[10px] font-bold rounded uppercase tracking-wider transition-colors ${form.longitudType === "specific" ? "bg-primary-container text-on-primary-fixed shadow-sm" : "text-on-surface-variant hover:text-on-surface"}`}>Specific</button>
+                      <div className="bg-surface-container-highest rounded p-0.5">
+                        <div className="relative flex w-full">
+                          {/* El fondo dorado que se desliza */}
+                          <div 
+                            className="absolute top-0 bottom-0 w-1/2 bg-primary-container rounded shadow-sm transition-transform duration-300 ease-out z-0"
+                            style={{ transform: form.longitudType === "specific" ? "translateX(100%)" : "translateX(0)" }}
+                          ></div>
+                          {/* Los botones transparentes encima */}
+                          <button type="button" onClick={() => handleChange("longitudType", "range")} className={`relative z-10 flex-1 px-3 py-1 text-[10px] font-bold rounded uppercase tracking-wider transition-colors duration-300 ${form.longitudType === "range" ? "text-on-primary-fixed" : "text-on-surface-variant hover:text-on-surface"}`}>Range</button>
+                          <button type="button" onClick={() => handleChange("longitudType", "specific")} className={`relative z-10 flex-1 px-3 py-1 text-[10px] font-bold rounded uppercase tracking-wider transition-colors duration-300 ${form.longitudType === "specific" ? "text-on-primary-fixed" : "text-on-surface-variant hover:text-on-surface"}`}>Specific</button>
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -204,26 +211,49 @@ export default function Home() {
                   </div>
                 </div>
 
+                {/* ANIMACIÓN 2: NIVEL CEFR */}
                 <div className="space-y-3">
                   <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest">LANGUAGE LEVEL (CEFR)</label>
-                  <div className="flex flex-wrap gap-3">
+                  <div className="relative flex justify-between w-full max-w-[360px]">
+                    {/* Círculos grises de fondo estáticos */}
+                    <div className="absolute inset-0 flex justify-between pointer-events-none z-0">
+                      {LEVELS.map(lvl => (
+                        <div key={`bg-${lvl}`} className="w-12 h-12 bg-surface-container-highest border border-outline-variant/20 rounded-full"></div>
+                      ))}
+                    </div>
+                    
+                    {/* La píldora dorada que viaja entre los círculos */}
+                    <div 
+                      className="absolute top-0 w-12 h-12 bg-primary-container rounded-full shadow-[0_0_15px_rgba(244,201,105,0.3)] ring-2 ring-primary/20 transition-all duration-300 ease-out z-10"
+                      style={{ left: `calc(${(levelIndex / 5) * 100}% - ${(levelIndex / 5) * 48}px)` }}
+                    ></div>
+
+                    {/* Los botones invisibles encima para capturar el click */}
                     {LEVELS.map(lvl => (
-                      <button key={lvl} type="button" onClick={() => handleChange("nivel", lvl)} className={`w-12 h-12 rounded-full flex items-center justify-center font-medium transition-colors shadow-sm ${form.nivel === lvl ? "bg-primary-container text-on-primary-fixed font-bold shadow-[0_0_15px_rgba(244,201,105,0.3)] ring-2 ring-primary/20" : "bg-surface-container-highest text-on-surface-variant hover:bg-surface-bright border border-outline-variant/20"}`}>
+                      <button key={lvl} type="button" onClick={() => handleChange("nivel", lvl)} className={`relative z-20 w-12 h-12 rounded-full flex items-center justify-center font-medium transition-colors duration-300 ${form.nivel === lvl ? "text-on-primary-fixed font-bold" : "text-on-surface-variant hover:text-on-surface"}`}>
                         {lvl}
                       </button>
                     ))}
                   </div>
                 </div>
 
-                {/* EL NIVEL DE VOCABULARIO (Conectado y funcional) */}
+                {/* ANIMACIÓN 3: VOCABULARIO */}
                 <div className="space-y-3">
                   <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest">VOCABULARY COMPLEXITY</label>
-                  <div className="grid grid-cols-3 gap-2 bg-surface-container-low p-1 rounded-lg">
-                    {VOCAB_COMPLEXITY.map((v) => (
-                      <button key={v} type="button" onClick={() => handleChange("vocabulario", v)} className={`py-3 px-2 rounded-md text-sm transition-colors ${form.vocabulario === v ? "font-bold bg-surface-container-highest text-primary shadow-sm border border-outline-variant/20" : "font-medium text-on-surface-variant hover:text-on-surface"}`}>
-                        {v}
-                      </button>
-                    ))}
+                  <div className="bg-surface-container-low p-1 rounded-lg">
+                    <div className="relative flex w-full">
+                      {/* El recuadro que se desliza por las 3 opciones */}
+                      <div 
+                        className="absolute top-0 bottom-0 w-[33.333%] bg-surface-container-highest shadow-sm border border-outline-variant/20 rounded-md transition-transform duration-300 ease-out z-0"
+                        style={{ transform: `translateX(${vocabIndex * 100}%)` }}
+                      ></div>
+                      {/* Textos transparentes */}
+                      {VOCAB_COMPLEXITY.map((v) => (
+                        <button key={v} type="button" onClick={() => handleChange("vocabulario", v)} className={`relative z-10 flex-1 py-3 px-2 rounded-md text-sm transition-colors duration-300 ${form.vocabulario === v ? "font-bold text-primary" : "font-medium text-on-surface-variant hover:text-on-surface"}`}>
+                          {v}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
@@ -237,7 +267,7 @@ export default function Home() {
                 {error && <div className="text-[#ffb4ab] text-sm bg-[#93000a]/20 p-3 rounded-lg border border-[#93000a]/50">{error}</div>}
 
                 <div className="pt-6">
-                  <button type="submit" disabled={loading} className={`w-full flex items-center justify-center gap-3 bg-gradient-to-r from-primary to-primary-container text-on-primary font-bold text-lg py-5 rounded-xl shadow-[0_10px_20px_rgba(244,201,105,0.15)] hover:shadow-[0_10px_25px_rgba(244,201,105,0.25)] hover:brightness-110 transition-all active:scale-[0.98] ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}>
+                  <button type="submit" disabled={loading} className={`w-full flex items-center justify-center gap-3 bg-gradient-to-r from-primary to-primary-container text-on-primary font-bold text-lg py-5 rounded-xl shadow-[0_10px_20px_rgba(244,201,105,0.15)] hover:shadow-[0_10px_25px_rgba(244,201,105,0.25)] hover:brightness-105 transition-all active:scale-[0.98] ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}>
                     <span className="material-symbols-outlined text-[24px]">{loading ? 'hourglass_empty' : 'mail'}</span>
                     {loading ? 'Crafting Email...' : 'Generate Email'}
                   </button>
