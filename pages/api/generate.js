@@ -1,7 +1,7 @@
 // pages/api/generate.js
 // Volvemos a la API directa de Google con un modelo estable
 
-const GEMINI_MODEL = "gemini-1.5-flash";
+const GEMINI_MODEL = "gemini-2.0-flash";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
