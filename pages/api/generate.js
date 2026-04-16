@@ -16,11 +16,9 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Usamos Mistral, un modelo excelente y rápido para la capa gratuita
-    const HF_MODEL = "mistralai/Mistral-7B-Instruct-v0.3";
-
+    // Usamos Qwen 2.5, un modelo espectacular, rapidísimo y sin restricciones
     const response = await fetch(
-      `https://api-inference.huggingface.co/models/${HF_MODEL}`,
+      "https://api-inference.huggingface.co/models/Qwen/Qwen2.5-7B-Instruct/v1/chat/completions",
       {
         method: "POST",
         headers: {
@@ -28,29 +26,29 @@ export default async function handler(req, res) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          // El formato [INST] es necesario para que Mistral entienda que es una orden
-          inputs: `<s>[INST] ${prompt} [/INST]`,
-          parameters: {
-            max_new_tokens: 800,
-            temperature: 0.7,
-            return_full_text: false // Para que no repita tu consigna en la respuesta
-          }
+          model: "Qwen/Qwen2.5-7B-Instruct",
+          messages: [{ role: "user", content: prompt }],
+          max_tokens: 800,
+          temperature: 0.7
         }),
       }
     );
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      // Hugging Face a veces "despierta" el modelo, si devuelve error 503, avisa
-      const errorMsg = data.error?.includes("is currently loading") 
-        ? "El modelo se está despertando, reintentá en 20 segundos." 
-        : (data.error || "Error de Hugging Face.");
-        
-      return res.status(response.status).json({ error: errorMsg });
+    // Leemos la respuesta como texto primero para evitar el error <!DOCTYPE HTML>
+    const textResponse = await response.text();
+    
+    let data;
+    try {
+      data = JSON.parse(textResponse);
+    } catch (e) {
+      return res.status(500).json({ error: "Hugging Face devolvió una página web en lugar de datos. Revisá que tu API Key empiece con 'hf_' en minúscula." });
     }
 
-    const text = data[0]?.generated_text;
+    if (!response.ok) {
+      return res.status(response.status).json({ error: data.error || "Error de Hugging Face." });
+    }
+
+    const text = data.choices?.[0]?.message?.content;
 
     if (!text) {
       return res.status(500).json({ error: "El modelo no generó respuesta." });
