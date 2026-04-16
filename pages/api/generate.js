@@ -20,10 +20,14 @@ export default async function handler(req, res) {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        // IMPORTANTE: OpenRouter requiere esto para sus modelos gratuitos
+        "HTTP-Referer": "https://email-generator6000.vercel.app/", 
+        "X-Title": "MailCraft"
       },
       body: JSON.stringify({
-        model: "qwen/qwen3-next-80b-a3b-instruct:free",
+        // Si este modelo sigue tirando error, cámbialo por "google/gemini-2.5-pro:free" o "meta-llama/llama-3.3-70b-instruct:free"
+        model: "qwen/qwen3-next-80b-a3b-instruct:free", 
         messages: [
           {
             role: "user",
