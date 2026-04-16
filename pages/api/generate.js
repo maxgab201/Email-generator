@@ -1,16 +1,13 @@
 // pages/api/generate.js
-// This runs on the server — the API key is NEVER exposed to the browser.
-
-const GEMINI_MODEL = "gemini-3.1-pro-preview";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ error: "GEMINI_API_KEY not configured." });
+    return res.status(500).json({ error: "OPENROUTER_API_KEY not configured." });
   }
 
   const { prompt } = req.body;
@@ -19,36 +16,39 @@ export default async function handler(req, res) {
   }
 
   try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.85,
-            maxOutputTokens: 1024,
-          },
-        }),
-      }
-    );
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "qwen/qwen3-next-80b-a3b-instruct:free",
+        messages: [
+          {
+            role: "user",
+            content: prompt
+          }
+        ]
+      })
+    });
+
+    const data = await response.json();
 
     if (!response.ok) {
-      const errData = await response.json();
       return res.status(response.status).json({
-        error: errData?.error?.message || "Gemini API error.",
+        error: data?.error?.message || "OpenRouter API error."
       });
     }
 
-    const data = await response.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const text = data?.choices?.[0]?.message?.content;
 
     if (!text) {
-      return res.status(500).json({ error: "No response from Gemini." });
+      return res.status(500).json({ error: "No response from model." });
     }
 
     return res.status(200).json({ result: text });
+
   } catch (err) {
     return res.status(500).json({ error: err.message || "Internal server error." });
   }
