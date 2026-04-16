@@ -23,7 +23,7 @@ export default async function handler(req, res) {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "open-mistral-7b", // Este es el modelo gratuito y rápido
+        model: "mistral-large-2512", // Este es el modelo gratuito y rápido
         messages: [
           {
             role: "user",
@@ -31,7 +31,7 @@ export default async function handler(req, res) {
           }
         ],
         temperature: 0.7,
-        max_tokens: 1000
+        max_tokens: 10000
       })
     });
 
