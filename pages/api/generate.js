@@ -28,7 +28,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         // Si este modelo sigue tirando error, cámbialo por "google/gemini-2.5-pro:free" o "meta-llama/llama-3.3-70b-instruct:free"
         //model: "qwen/qwen3-next-80b-a3b-instruct:free",
-        model: "meta-llama/llama-3.3-70b-instruct:free",
+        model: "google/gemini-2.5-flash:free",
         messages: [
           {
             role: "user",
