@@ -5,64 +5,110 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  // Asegurate de que en Vercel la variable tenga  (¡con hf en minúscula!)
-  const apiKey = process.env.HUGGINGFACE_API_KEY;
+  const apiKey = process.env.MISTRAL_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ error: "HUGGINGFACE_API_KEY not configured." });
+    return res.status(500).json({ error: "MISTRAL_API_KEY no configurada en Vercel." });
   }
 
   const { prompt } = req.body;
   if (!prompt) {
-    return res.status(400).json({ error: "Missing prompt." });
+    return res.status(400).json({ error: "Falta el prompt." });
   }
 
   try {
-    // Usamos Zephyr 7B: excelente para textos, nunca pide aceptar términos y la ruta es simple
-    const response = await fetch(
-      "https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta",
-      {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          inputs: `<|system|>\nYou are an expert email writer.\n<|user|>\n${prompt}\n<|assistant|>\n`,
-          parameters: {
-            max_new_tokens: 800,
-            temperature: 0.7,
-            return_full_text: false
+    const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "open-mistral-7b", // Este es el modelo gratuito y rápido
+        messages: [
+          {
+            role: "user",
+            content: prompt
           }
-        }),
-      }
-    );
+        ],
+        temperature: 0.7,
+        max_tokens: 1000
+      })
+    });
 
-    const textResponse = await response.text();
-    
-    let data;
-    try {
-      data = JSON.parse(textResponse);
-    } catch (e) {
-      // Si llegás a ver esto, significa que el token en Vercel sigue con algún espacio en blanco o mayúscula
-      return res.status(500).json({ error: "Error de conexión. Chequeá que en Vercel el token sea exacto: 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" });
-    }
+    const data = await response.json();
 
     if (!response.ok) {
-      const errorMsg = data.error?.includes("is currently loading") 
-        ? "El servidor de Hugging Face se está encendiendo. Esperá 20 segundos y volvé a darle a generar." 
-        : (data.error || "Error de la API de Hugging Face.");
-      return res.status(response.status).json({ error: errorMsg });
+      return res.status(response.status).json({
+        error: data.error?.message || "Error en la API de Mistral."
+      });
     }
 
-    // Hugging face devuelve un array en este endpoint
-    const text = data[0]?.generated_text;
+    const text = data.choices?.[0]?.message?.content;
 
     if (!text) {
-      return res.status(500).json({ error: "El modelo no generó respuesta." });
+      return res.status(500).json({ error: "Mistral no devolvió texto." });
     }
 
     return res.status(200).json({ result: text.trim() });
+
   } catch (err) {
-    return res.status(500).json({ error: err.message || "Error interno del servidor." });
+    return res.status(500).json({ error: err.message || "Internal server error." });
+  }
+}
+// pages/api/generate.js
+
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  const apiKey = process.env.MISTRAL_API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ error: "MISTRAL_API_KEY no configurada en Vercel." });
+  }
+
+  const { prompt } = req.body;
+  if (!prompt) {
+    return res.status(400).json({ error: "Falta el prompt." });
+  }
+
+  try {
+    const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "open-mistral-7b", // Este es el modelo gratuito y rápido
+        messages: [
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 1000
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return res.status(response.status).json({
+        error: data.error?.message || "Error en la API de Mistral."
+      });
+    }
+
+    const text = data.choices?.[0]?.message?.content;
+
+    if (!text) {
+      return res.status(500).json({ error: "Mistral no devolvió texto." });
+    }
+
+    return res.status(200).json({ result: text.trim() });
+
+  } catch (err) {
+    return res.status(500).json({ error: err.message || "Internal server error." });
   }
 }
