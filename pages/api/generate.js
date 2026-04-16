@@ -1,16 +1,13 @@
 // pages/api/generate.js
-// Volvemos a la API directa de Google con un modelo estable
-
-const GEMINI_MODEL = "gemini-2.0-flash";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.HUGGINGFACE_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ error: "GEMINI_API_KEY not configured." });
+    return res.status(500).json({ error: "HUGGINGFACE_API_KEY not configured." });
   }
 
   const { prompt } = req.body;
@@ -19,37 +16,48 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Usamos Mistral, un modelo excelente y rápido para la capa gratuita
+    const HF_MODEL = "mistralai/Mistral-7B-Instruct-v0.3";
+
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+      `https://api-inference.huggingface.co/models/${HF_MODEL}`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.85,
-            maxOutputTokens: 1024,
-          },
+          // El formato [INST] es necesario para que Mistral entienda que es una orden
+          inputs: `<s>[INST] ${prompt} [/INST]`,
+          parameters: {
+            max_new_tokens: 800,
+            temperature: 0.7,
+            return_full_text: false // Para que no repita tu consigna en la respuesta
+          }
         }),
       }
     );
 
+    const data = await response.json();
+
     if (!response.ok) {
-      const errData = await response.json();
-      return res.status(response.status).json({
-        error: errData?.error?.message || "Gemini API error.",
-      });
+      // Hugging Face a veces "despierta" el modelo, si devuelve error 503, avisa
+      const errorMsg = data.error?.includes("is currently loading") 
+        ? "El modelo se está despertando, reintentá en 20 segundos." 
+        : (data.error || "Error de Hugging Face.");
+        
+      return res.status(response.status).json({ error: errorMsg });
     }
 
-    const data = await response.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const text = data[0]?.generated_text;
 
     if (!text) {
-      return res.status(500).json({ error: "No response from Gemini." });
+      return res.status(500).json({ error: "El modelo no generó respuesta." });
     }
 
-    return res.status(200).json({ result: text });
+    return res.status(200).json({ result: text.trim() });
   } catch (err) {
-    return res.status(500).json({ error: err.message || "Internal server error." });
+    return res.status(500).json({ error: err.message || "Error interno del servidor." });
   }
 }
