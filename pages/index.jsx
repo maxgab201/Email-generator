@@ -94,9 +94,10 @@ export default function Home() {
     <div className="bg-background text-on-surface font-body min-h-screen flex antialiased selection:bg-primary-container selection:text-on-primary-container dark h-screen w-full overflow-hidden">
       <Head>
         <title>MailCraft - AI Editorial Suite</title>
-                <link rel="manifest" href="/manifest.json" />
+        <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#131313" />
-        <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2983/2983788.png" />
+        {/* ACÁ ESTÁ TU ÍCONO NUEVO */}
+        <link rel="apple-touch-icon" href="https://i.postimg.cc/1XfP6k97/37730-removebg-preview.png" />
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
         <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,400;0,600;1,400&display=swap" rel="stylesheet"/>
         <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
