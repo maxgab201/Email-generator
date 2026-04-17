@@ -1,3 +1,16 @@
-self.addEventListener('fetch', function(event) {
-  // Solo con existir, este fetch hace que Chrome habilite la instalación de la PWA
+const CACHE_NAME = 'mailcraft-v1';
+
+self.addEventListener('install', (e) => {
+  e.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll([
+      '/',
+      '/manifest.json'
+    ]))
+  );
+});
+
+self.addEventListener('fetch', (e) => {
+  e.respondWith(
+    caches.match(e.request).then((response) => response || fetch(e.request))
+  );
 });
