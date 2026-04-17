@@ -13,7 +13,7 @@ export default function Home() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   const [form, setForm] = useState({
-    consigna: "", idioma: "English", longitudType: "range", longitudMin: "100", longitudMax: "250", longitudSpecific: "", nivel: "B1", vocabulario: "Intermediate", vocabularioExtra: "",
+    consigna: "", idioma: "English", longitudType: "range", longitudMin: "120", longitudMax: "140", longitudSpecific: "", nivel: "B1", vocabulario: "Intermediate", vocabularioExtra: "",
   });
   
   const [loading, setLoading] = useState(false);
