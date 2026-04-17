@@ -10,8 +10,9 @@ export default function Home() {
   const [history, setHistory] = useState([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
+  // SE AGREGARON nombreRemitente y nombreDestinatario
   const [form, setForm] = useState({
-    consigna: "", idioma: "English", longitudType: "range", longitudMin: "120", longitudMax: "140", longitudSpecific: "", nivel: "B1", vocabulario: "Intermediate", vocabularioExtra: "",
+    consigna: "", idioma: "English", longitudType: "range", longitudMin: "120", longitudMax: "140", longitudSpecific: "", nivel: "B1", vocabulario: "Intermediate", vocabularioExtra: "", nombreRemitente: "", nombreDestinatario: ""
   });
   
   const [loading, setLoading] = useState(false);
@@ -19,10 +20,9 @@ export default function Home() {
   const [error, setError] = useState(null);
   const resultRef = useRef(null);
 
-  // NUEVOS ESTADOS PARA V2.0
   const [isHumanizing, setIsHumanizing] = useState(false);
   const [isDetecting, setIsDetecting] = useState(false);
-  const [aiScore, setAiScore] = useState(null); // null = no analizado aún
+  const [aiScore, setAiScore] = useState(null); 
 
   useEffect(() => {
     const savedHistory = localStorage.getItem("mailcraft_history");
@@ -39,13 +39,18 @@ export default function Home() {
       ? `between ${form.longitudMin} and ${form.longitudMax} words` 
       : `exactly ${form.longitudSpecific} words`;
     const vocabExtra = form.vocabularioExtra.trim() ? `\n- Include these words: ${form.vocabularioExtra}.` : "";
-    return `Write a professional email in ${form.idioma}:\n- Topic: ${form.consigna}\n- Level: ${form.nivel} (CEFR)\n- Length: ${lengthInstruction}\n- Vocab: ${form.vocabulario} complexity${vocabExtra}\nOnly output the email itself.`;
+    
+    // VARIABLES PARA NOMBRES
+    const senderInfo = form.nombreRemitente.trim() ? `\n- Sender Name: ${form.nombreRemitente}` : "";
+    const recipientInfo = form.nombreDestinatario.trim() ? `\n- Recipient Name: ${form.nombreDestinatario}` : "";
+
+    return `Write a professional email in ${form.idioma}:\n- Topic: ${form.consigna}\n- Level: ${form.nivel} (CEFR)\n- Length: ${lengthInstruction}\n- Vocab: ${form.vocabulario} complexity${vocabExtra}${senderInfo}${recipientInfo}\nOnly output the email itself.`;
   };
 
   const handleGenerate = async (e) => {
     e.preventDefault();
     if (!form.consigna.trim()) return setError("Please enter a topic.");
-    setLoading(true); setResult(null); setError(null); setAiScore(null); // Resetea el escáner
+    setLoading(true); setResult(null); setError(null); setAiScore(null); 
 
     try {
       const res = await fetch("/api/generate", {
@@ -78,7 +83,6 @@ export default function Home() {
     }
   };
 
-  // NUEVA FUNCIÓN: Humanizador
   const handleHumanize = async () => {
     if (!result) return;
     setIsHumanizing(true);
@@ -92,7 +96,7 @@ export default function Home() {
       if (!res.ok) throw new Error(data.error);
       
       setResult(data.result);
-      setAiScore(null); // Borramos el puntaje viejo porque el texto cambió
+      setAiScore(null); 
     } catch (err) {
       setError(err.message || "Error al humanizar.");
     } finally {
@@ -100,7 +104,6 @@ export default function Home() {
     }
   };
 
-  // NUEVA FUNCIÓN: Detector Sapling
   const handleDetect = async () => {
     if (!result) return;
     setIsDetecting(true);
@@ -239,6 +242,18 @@ export default function Home() {
                   <textarea value={form.consigna} onChange={(e) => handleChange("consigna", e.target.value)} className="w-full bg-surface-container-low border-0 rounded-lg p-4 text-on-surface focus:ring-1 focus:ring-primary/40 focus:bg-surface-container-highest transition-all resize-none shadow-inner outline-none" placeholder="e.g. Write an email to the marketing team requesting an update..." rows="4" />
                 </div>
 
+                {/* NUEVOS CAMPOS: REMITENTE Y DESTINATARIO */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest">SENDER NAME <span className="text-outline lowercase font-normal italic">(optional)</span></label>
+                    <input type="text" value={form.nombreRemitente} onChange={(e) => handleChange("nombreRemitente", e.target.value)} className="w-full bg-surface-container-low border-0 rounded-lg p-4 text-on-surface focus:ring-1 focus:ring-primary/40 transition-all shadow-inner outline-none" placeholder="e.g. Max..." />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest">RECIPIENT NAME <span className="text-outline lowercase font-normal italic">(optional)</span></label>
+                    <input type="text" value={form.nombreDestinatario} onChange={(e) => handleChange("nombreDestinatario", e.target.value)} className="w-full bg-surface-container-low border-0 rounded-lg p-4 text-on-surface focus:ring-1 focus:ring-primary/40 transition-all shadow-inner outline-none" placeholder="e.g. John Doe..." />
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest">LANGUAGE</label>
@@ -331,7 +346,6 @@ export default function Home() {
               </form>
             </div>
 
-            {/* CAJA DE RESULTADO Y BOTONES NUEVOS */}
             {result && (
               <div ref={resultRef} className="mt-8 bg-surface-container rounded-xl p-6 md:p-8 shadow-[0_20px_40px_rgba(0,0,0,0.4)] border border-primary/20">
                  <h3 className="font-headline text-2xl text-primary mb-4">Generated Result</h3>
@@ -340,7 +354,6 @@ export default function Home() {
                    <pre className="text-on-surface font-body whitespace-pre-wrap text-sm leading-relaxed">{result}</pre>
                  </div>
                  
-                 {/* BOTONERA V2.0 */}
                  <div className="border-t border-surface-container-highest pt-6">
                    <div className="flex flex-wrap gap-3">
                      <button onClick={() => navigator.clipboard.writeText(result)} className="flex-1 px-4 py-3 bg-surface-container-highest text-primary rounded-lg text-sm font-bold hover:bg-surface-bright transition-colors border border-outline-variant/30 flex justify-center items-center gap-2">
@@ -358,7 +371,6 @@ export default function Home() {
                      </button>
                    </div>
 
-                   {/* ESCÁNER VISUAL (Solo aparece si hay puntaje) */}
                    {aiScore !== null && (
                      <div className="mt-6 p-5 bg-[#0e0e0e] rounded-xl border border-[#353534]/50 shadow-inner">
                         <div className="flex justify-between items-center mb-3">
@@ -368,7 +380,6 @@ export default function Home() {
                            <span className="text-emerald-400 flex items-center gap-1"><span className="material-symbols-outlined text-[16px]">face</span> Human: {100 - aiScore}%</span>
                            <span className="text-rose-400 flex items-center gap-1">AI: {aiScore}% <span className="material-symbols-outlined text-[16px]">smart_toy</span></span>
                         </div>
-                        {/* Barra de progreso */}
                         <div className="w-full bg-surface-container-highest rounded-full h-2.5 flex overflow-hidden ring-1 ring-black/50">
                            <div style={{ width: `${100 - aiScore}%` }} className="bg-gradient-to-r from-emerald-500 to-emerald-400 h-full transition-all duration-1000 ease-out"></div>
                            <div style={{ width: `${aiScore}%` }} className="bg-gradient-to-r from-rose-400 to-rose-500 h-full transition-all duration-1000 ease-out"></div>
@@ -381,7 +392,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* VISTA 2: HISTORY */}
         {currentView === 'history' && (
           <div className="max-w-6xl mx-auto px-6 py-8 md:px-12 md:py-16 relative z-10 md:pt-16">
             <header className="mb-14">
