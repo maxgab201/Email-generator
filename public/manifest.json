@@ -1,0 +1,17 @@
+{
+  "name": "MailCraft AI",
+  "short_name": "MailCraft",
+  "description": "AI Editorial Suite",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#131313",
+  "theme_color": "#131313",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2983/2983788.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
