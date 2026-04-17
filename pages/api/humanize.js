@@ -6,7 +6,18 @@ export default async function handler(req, res) {
 
   if (!text) return res.status(400).json({ error: "Falta el texto a humanizar." });
 
-  const prompt = `You are an expert editor. Rewrite the following email to sound completely human, natural, and conversational. Remove any AI-like phrasing (like "delve", "synergy", "testament", "I hope this email finds you well"), corporate jargon, or robotic structures. Make it sound like a real person typing casually but professionally. Keep the same language as the original. Only output the rewritten email.\n\nOriginal Text:\n${text}`;
+  // PROMPT ULTRA DETALLADO Y RESTRICTIVO
+  const prompt = `You are an expert copyeditor specializing in humanizing AI-generated text. Your objective is to rewrite the provided email so it reads as if written by a real human professional, STRICTLY following these constraints:
+1. ZERO AI-ISMS: Remove entirely robotic and cliché phrasing (e.g., 'I hope this email finds you well', 'delve', 'synergy', 'testament to', 'seamless', 'in conclusion').
+2. PRESERVE LENGTH: The word count must remain practically identical to the original. Do not expand or summarize.
+3. PRESERVE NAMES: Do not add, modify, or remove the sender's or recipient's names. Leave them exactly as they are.
+4. PRESERVE MEANING: Do not change the topic, intent, tone, or any core information.
+5. MINIMAL INTERVENTION: Change ONLY what is strictly necessary to make it sound natural, realistic, and slightly conversational. Do not over-edit.
+
+Output ONLY the final rewritten email text, without any commentary, markdown blocks, or introductory text.
+
+Original Text:
+${text}`;
 
   try {
     const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
@@ -15,7 +26,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: "mistral-large-latest",
         messages: [{ role: "user", content: prompt }],
-        temperature: 0.8, // Un poco más alto para mayor creatividad humana
+        temperature: 0.3, // Temperatura baja para que no invente cosas nuevas, solo corrija
         max_tokens: 1000
       })
     });
