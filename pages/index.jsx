@@ -8,8 +8,6 @@ const VOCAB_COMPLEXITY = ["Simple", "Intermediate", "Complex"];
 export default function Home() {
   const [currentView, setCurrentView] = useState("generator");
   const [history, setHistory] = useState([]);
-  
-  // NUEVO ESTADO: Controla si el menú de celular está abierto o cerrado
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   const [form, setForm] = useState({
@@ -20,6 +18,11 @@ export default function Home() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const resultRef = useRef(null);
+
+  // NUEVOS ESTADOS PARA V2.0
+  const [isHumanizing, setIsHumanizing] = useState(false);
+  const [isDetecting, setIsDetecting] = useState(false);
+  const [aiScore, setAiScore] = useState(null); // null = no analizado aún
 
   useEffect(() => {
     const savedHistory = localStorage.getItem("mailcraft_history");
@@ -42,7 +45,7 @@ export default function Home() {
   const handleGenerate = async (e) => {
     e.preventDefault();
     if (!form.consigna.trim()) return setError("Please enter a topic.");
-    setLoading(true); setResult(null); setError(null);
+    setLoading(true); setResult(null); setError(null); setAiScore(null); // Resetea el escáner
 
     try {
       const res = await fetch("/api/generate", {
@@ -75,13 +78,55 @@ export default function Home() {
     }
   };
 
+  // NUEVA FUNCIÓN: Humanizador
+  const handleHumanize = async () => {
+    if (!result) return;
+    setIsHumanizing(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/humanize", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: result }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      
+      setResult(data.result);
+      setAiScore(null); // Borramos el puntaje viejo porque el texto cambió
+    } catch (err) {
+      setError(err.message || "Error al humanizar.");
+    } finally {
+      setIsHumanizing(false);
+    }
+  };
+
+  // NUEVA FUNCIÓN: Detector Sapling
+  const handleDetect = async () => {
+    if (!result) return;
+    setIsDetecting(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/detect", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: result }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      
+      setAiScore(data.aiScore);
+    } catch (err) {
+      setError(err.message || "Error al escanear el texto.");
+    } finally {
+      setIsDetecting(false);
+    }
+  };
+
   const deleteHistoryItem = (id) => {
     const updatedHistory = history.filter(item => item.id !== id);
     setHistory(updatedHistory);
     localStorage.setItem("mailcraft_history", JSON.stringify(updatedHistory));
   };
 
-  // Función para cambiar de vista y cerrar el menú en móviles
   const handleNavClick = (view) => {
     setCurrentView(view);
     setIsMobileMenuOpen(false);
@@ -96,7 +141,6 @@ export default function Home() {
         <title>MailCraft - AI Editorial Suite</title>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#131313" />
-        {/* ACÁ ESTÁ TU ÍCONO NUEVO */}
         <link rel="apple-touch-icon" href="https://i.postimg.cc/1XfP6k97/37730-removebg-preview.png" />
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
         <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,400;0,600;1,400&display=swap" rel="stylesheet"/>
@@ -131,7 +175,6 @@ export default function Home() {
         `}</style>
       </Head>
 
-      {/* --- MOBILE TOP BAR --- */}
       <nav className="md:hidden fixed top-0 left-0 w-full z-40 flex justify-between items-center px-6 py-4 bg-[#0e0e0e]/90 backdrop-blur-md border-b border-outline-variant/20 shadow-md">
         <div className="text-xl font-headline italic text-[#f4c969]">MailCraft</div>
         <button onClick={() => setIsMobileMenuOpen(true)} className="text-[#f4c969] hover:text-[#d6ad50] transition-colors p-1 flex items-center justify-center">
@@ -139,16 +182,13 @@ export default function Home() {
         </button>
       </nav>
 
-      {/* --- BACKDROP MÓVIL (Oscurece el fondo al abrir menú) --- */}
       <div 
         className={`fixed inset-0 bg-black/60 z-40 md:hidden transition-opacity duration-300 ${isMobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} 
         onClick={() => setIsMobileMenuOpen(false)}
       />
 
-      {/* --- SIDEBAR (Retráctil en Móvil, Fija en PC) --- */}
       <aside className={`fixed md:relative top-0 left-0 h-full py-8 border-r border-[#353534]/20 bg-[#0e0e0e] w-64 flex-shrink-0 z-50 flex flex-col transition-transform duration-300 ease-in-out md:translate-x-0 ${isMobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}`}>
         
-        {/* Botón Cerrar (Solo Móvil) */}
         <button onClick={() => setIsMobileMenuOpen(false)} className="md:hidden absolute top-5 right-5 text-on-surface-variant hover:text-[#f4c969] transition-colors">
            <span className="material-symbols-outlined text-[24px]">close</span>
         </button>
@@ -177,12 +217,9 @@ export default function Home() {
         </div>
       </aside>
 
-      {/* --- MAIN CONTENT AREA --- */}
-      {/* pt-24 asegura que la barra superior móvil no tape el título */}
       <main className="flex-1 h-full overflow-y-auto relative z-10 bg-background pt-24 pb-20 md:pt-0">
         <div className="absolute top-0 left-1/4 w-1/2 h-96 bg-primary/5 rounded-full blur-[140px] pointer-events-none mix-blend-screen"></div>
         
-        {/* VISTA 1: GENERATOR */}
         {currentView === 'generator' && (
           <div className="px-4 py-8 md:px-8 max-w-4xl mx-auto w-full relative z-10 md:pt-16">
             <header className="text-center mb-10 flex flex-col items-center">
@@ -242,7 +279,6 @@ export default function Home() {
 
                 <div className="space-y-3">
                   <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest">LANGUAGE LEVEL (CEFR)</label>
-                  {/* Animación fluida para Nivel CEFR ajustada a pantallas móviles */}
                   <div className="relative flex justify-between w-full">
                     <div className="absolute inset-0 flex justify-between pointer-events-none z-0">
                       {LEVELS.map(lvl => (
@@ -252,9 +288,7 @@ export default function Home() {
                     
                     <div 
                       className="absolute top-0 w-10 h-10 sm:w-12 sm:h-12 bg-primary-container rounded-full shadow-[0_0_15px_rgba(244,201,105,0.3)] ring-2 ring-primary/20 transition-all duration-300 ease-out z-10"
-                      style={{ 
-                        left: `calc(${(levelIndex / 5) * 100}% - ${(levelIndex / 5)} * min(3rem, 2.5rem))` 
-                      }}
+                      style={{ left: `calc(${(levelIndex / 5) * 100}% - ${(levelIndex / 5)} * min(3rem, 2.5rem))` }}
                     ></div>
 
                     {LEVELS.map(lvl => (
@@ -297,15 +331,51 @@ export default function Home() {
               </form>
             </div>
 
+            {/* CAJA DE RESULTADO Y BOTONES NUEVOS */}
             {result && (
               <div ref={resultRef} className="mt-8 bg-surface-container rounded-xl p-6 md:p-8 shadow-[0_20px_40px_rgba(0,0,0,0.4)] border border-primary/20">
                  <h3 className="font-headline text-2xl text-primary mb-4">Generated Result</h3>
-                 <div className="bg-surface-container-low p-5 rounded-lg border border-outline-variant/20">
+                 
+                 <div className="bg-surface-container-low p-5 rounded-lg border border-outline-variant/20 mb-6">
                    <pre className="text-on-surface font-body whitespace-pre-wrap text-sm leading-relaxed">{result}</pre>
                  </div>
-                 <button onClick={() => navigator.clipboard.writeText(result)} className="mt-4 px-4 py-2 bg-surface-container-highest text-primary rounded-lg text-sm font-bold hover:bg-surface-bright transition-colors border border-outline-variant/30 flex items-center gap-2">
-                   <span className="material-symbols-outlined text-[18px]">content_copy</span> Copy to clipboard
-                 </button>
+                 
+                 {/* BOTONERA V2.0 */}
+                 <div className="border-t border-surface-container-highest pt-6">
+                   <div className="flex flex-wrap gap-3">
+                     <button onClick={() => navigator.clipboard.writeText(result)} className="flex-1 px-4 py-3 bg-surface-container-highest text-primary rounded-lg text-sm font-bold hover:bg-surface-bright transition-colors border border-outline-variant/30 flex justify-center items-center gap-2">
+                       <span className="material-symbols-outlined text-[18px]">content_copy</span> Copy
+                     </button>
+                     
+                     <button onClick={handleHumanize} disabled={isHumanizing} className={`flex-[1.5] px-4 py-3 bg-transparent text-primary rounded-lg text-sm font-bold hover:bg-primary/10 transition-colors border border-primary/40 flex justify-center items-center gap-2 ${isHumanizing ? 'opacity-70 cursor-not-allowed' : ''}`}>
+                       <span className="material-symbols-outlined text-[18px]">{isHumanizing ? 'sync' : 'psychology_alt'}</span> 
+                       {isHumanizing ? 'Humanizing...' : 'Humanize Text'}
+                     </button>
+
+                     <button onClick={handleDetect} disabled={isDetecting} className={`flex-[1.5] px-4 py-3 bg-transparent text-on-surface rounded-lg text-sm font-bold hover:bg-surface-container-highest transition-colors border border-outline-variant/40 flex justify-center items-center gap-2 ${isDetecting ? 'opacity-70 cursor-not-allowed' : ''}`}>
+                       <span className="material-symbols-outlined text-[18px]">{isDetecting ? 'radar' : 'policy'}</span> 
+                       {isDetecting ? 'Scanning...' : 'AI Detector'}
+                     </button>
+                   </div>
+
+                   {/* ESCÁNER VISUAL (Solo aparece si hay puntaje) */}
+                   {aiScore !== null && (
+                     <div className="mt-6 p-5 bg-[#0e0e0e] rounded-xl border border-[#353534]/50 shadow-inner">
+                        <div className="flex justify-between items-center mb-3">
+                          <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Sapling.ai Analysis</span>
+                        </div>
+                        <div className="flex items-center justify-between mb-2 font-body font-bold text-sm">
+                           <span className="text-emerald-400 flex items-center gap-1"><span className="material-symbols-outlined text-[16px]">face</span> Human: {100 - aiScore}%</span>
+                           <span className="text-rose-400 flex items-center gap-1">AI: {aiScore}% <span className="material-symbols-outlined text-[16px]">smart_toy</span></span>
+                        </div>
+                        {/* Barra de progreso */}
+                        <div className="w-full bg-surface-container-highest rounded-full h-2.5 flex overflow-hidden ring-1 ring-black/50">
+                           <div style={{ width: `${100 - aiScore}%` }} className="bg-gradient-to-r from-emerald-500 to-emerald-400 h-full transition-all duration-1000 ease-out"></div>
+                           <div style={{ width: `${aiScore}%` }} className="bg-gradient-to-r from-rose-400 to-rose-500 h-full transition-all duration-1000 ease-out"></div>
+                        </div>
+                     </div>
+                   )}
+                 </div>
               </div>
             )}
           </div>
