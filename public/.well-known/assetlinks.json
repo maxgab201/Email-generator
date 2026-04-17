@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.max.mailcraft",
+        "sha256_cert_fingerprints": ["49:7E:04:83:DA:60:D2:B3:3A:23:52:07:20:BA:85:3F:BE:43:E1:25:12:BD:A0:DA:7E:99:F7:31:D2:AF:1B:AA"]
+      }
+    }]
