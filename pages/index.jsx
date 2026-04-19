@@ -5,12 +5,90 @@ const LANGUAGES = ["English", "Spanish", "French", "German", "Italian", "Portugu
 const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 const VOCAB_COMPLEXITY = ["Simple", "Intermediate", "Complex"];
 
+// DICCIONARIO PARA LA INTERFAZ
+const UI = {
+  EN: {
+    appDesc: "AI-powered email generator",
+    genTab: "Generator",
+    histTab: "History",
+    newDraft: "New Draft",
+    topic: "TOPIC / ASSIGNMENT",
+    topicPl: "e.g. Write an email to the marketing team...",
+    sender: "SENDER NAME",
+    senderPl: "e.g. Max...",
+    recipient: "RECIPIENT NAME",
+    recipientPl: "e.g. John Doe...",
+    lang: "EMAIL LANGUAGE",
+    length: "LENGTH (WORDS)",
+    range: "Range",
+    specific: "Specific",
+    level: "LANGUAGE LEVEL (CEFR)",
+    vocab: "VOCABULARY COMPLEXITY",
+    reqVocab: "REQUIRED VOCABULARY",
+    opt: "(optional)",
+    vocabPl: "synergy, pivot, robust...",
+    btnGen: "Generate Email",
+    btnGenIng: "Crafting Email...",
+    resTitle: "Generated Result",
+    btnCopy: "Copy",
+    btnHum: "Humanize Text",
+    btnHumIng: "Humanizing...",
+    histTitle: "Email History",
+    histSub: "Your archive of crafted correspondence. Review, replicate, or refine past communications.",
+    noHist: "No history yet",
+    noHistSub: "Emails you generate will automatically be saved here.",
+    goGen: "Go Generate One",
+    settings: "Settings",
+    theme: "Theme",
+    appLang: "App Language"
+  },
+  ES: {
+    appDesc: "Generador de correos con IA",
+    genTab: "Generador",
+    histTab: "Historial",
+    newDraft: "Nuevo Borrador",
+    topic: "TEMA / CONSIGNA",
+    topicPl: "ej. Escribir un correo al equipo de marketing...",
+    sender: "NOMBRE DEL REMITENTE",
+    senderPl: "ej. Max...",
+    recipient: "NOMBRE DEL DESTINATARIO",
+    recipientPl: "ej. Juan Pérez...",
+    lang: "IDIOMA DEL CORREO",
+    length: "LONGITUD (PALABRAS)",
+    range: "Rango",
+    specific: "Exacto",
+    level: "NIVEL DE IDIOMA (CEFR)",
+    vocab: "COMPLEJIDAD DEL VOCABULARIO",
+    reqVocab: "VOCABULARIO REQUERIDO",
+    opt: "(opcional)",
+    vocabPl: "sinergia, pivote, robusto...",
+    btnGen: "Generar Email",
+    btnGenIng: "Creando Email...",
+    resTitle: "Resultado Generado",
+    btnCopy: "Copiar",
+    btnHum: "Humanizar Texto",
+    btnHumIng: "Humanizando...",
+    histTitle: "Historial de Emails",
+    histSub: "Tu archivo de correos. Revisa, copia o refina tus comunicaciones pasadas.",
+    noHist: "No hay historial aún",
+    noHistSub: "Los emails que generes se guardarán automáticamente aquí.",
+    goGen: "Ir a Generar Uno",
+    settings: "Ajustes",
+    theme: "Tema",
+    appLang: "Idioma de la App"
+  }
+};
+
 export default function Home() {
   const [currentView, setCurrentView] = useState("generator");
   const [history, setHistory] = useState([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
-  // SE AGREGARON nombreRemitente y nombreDestinatario
+  // NUEVOS ESTADOS DE CONFIGURACIÓN
+  const [theme, setTheme] = useState("dark");
+  const [uiLang, setUiLang] = useState("EN");
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  
   const [form, setForm] = useState({
     consigna: "", idioma: "English", longitudType: "range", longitudMin: "120", longitudMax: "140", longitudSpecific: "", nivel: "B1", vocabulario: "Intermediate", vocabularioExtra: "", nombreRemitente: "", nombreDestinatario: ""
   });
@@ -18,11 +96,10 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+  const [isHumanizing, setIsHumanizing] = useState(false);
   const resultRef = useRef(null);
 
-  const [isHumanizing, setIsHumanizing] = useState(false);
-  const [isDetecting, setIsDetecting] = useState(false);
-  const [aiScore, setAiScore] = useState(null); 
+  const t = UI[uiLang]; // Traducciones dinámicas
 
   useEffect(() => {
     const savedHistory = localStorage.getItem("mailcraft_history");
@@ -39,8 +116,6 @@ export default function Home() {
       ? `between ${form.longitudMin} and ${form.longitudMax} words` 
       : `exactly ${form.longitudSpecific} words`;
     const vocabExtra = form.vocabularioExtra.trim() ? `\n- Include these words: ${form.vocabularioExtra}.` : "";
-    
-    // VARIABLES PARA NOMBRES
     const senderInfo = form.nombreRemitente.trim() ? `\n- Sender Name: ${form.nombreRemitente}` : "";
     const recipientInfo = form.nombreDestinatario.trim() ? `\n- Recipient Name: ${form.nombreDestinatario}` : "";
 
@@ -50,7 +125,7 @@ export default function Home() {
   const handleGenerate = async (e) => {
     e.preventDefault();
     if (!form.consigna.trim()) return setError("Please enter a topic.");
-    setLoading(true); setResult(null); setError(null); setAiScore(null); 
+    setLoading(true); setResult(null); setError(null);
 
     try {
       const res = await fetch("/api/generate", {
@@ -94,33 +169,11 @@ export default function Home() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      
       setResult(data.result);
-      setAiScore(null); 
     } catch (err) {
       setError(err.message || "Error al humanizar.");
     } finally {
       setIsHumanizing(false);
-    }
-  };
-
-  const handleDetect = async () => {
-    if (!result) return;
-    setIsDetecting(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/detect", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: result }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      
-      setAiScore(data.aiScore);
-    } catch (err) {
-      setError(err.message || "Error al escanear el texto.");
-    } finally {
-      setIsDetecting(false);
     }
   };
 
@@ -135,11 +188,38 @@ export default function Home() {
     setIsMobileMenuOpen(false);
   };
 
+  // MINI-COMPONENTE: Menú de Ajustes
+  const SettingsMenu = () => (
+    <div className="relative">
+      <button onClick={() => setIsSettingsOpen(!isSettingsOpen)} className="p-2 rounded-full bg-surface-container shadow-md border border-outline-variant/30 text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center">
+        <span className="material-symbols-outlined text-[24px]">settings</span>
+      </button>
+      {isSettingsOpen && (
+        <div className="absolute top-full right-0 mt-3 w-56 bg-surface-container-high rounded-xl shadow-[0_20px_40px_rgba(0,0,0,0.5)] border border-outline-variant/30 p-4 flex flex-col gap-4 z-50">
+          <div>
+            <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2 block">{t.theme}</label>
+            <div className="flex bg-surface-container-lowest rounded-lg p-1 border border-outline-variant/10">
+              <button onClick={() => setTheme('light')} className={`flex-1 py-1.5 text-sm rounded-md transition-colors flex justify-center items-center ${theme === 'light' ? 'bg-primary-container text-on-primary font-bold shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}><span className="material-symbols-outlined text-[18px]">light_mode</span></button>
+              <button onClick={() => setTheme('dark')} className={`flex-1 py-1.5 text-sm rounded-md transition-colors flex justify-center items-center ${theme === 'dark' ? 'bg-primary-container text-on-primary font-bold shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}><span className="material-symbols-outlined text-[18px]">dark_mode</span></button>
+            </div>
+          </div>
+          <div>
+            <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2 block">{t.appLang}</label>
+            <div className="flex bg-surface-container-lowest rounded-lg p-1 border border-outline-variant/10">
+              <button onClick={() => setUiLang('EN')} className={`flex-1 py-1 text-xs tracking-wider rounded-md transition-colors ${uiLang === 'EN' ? 'bg-primary-container text-on-primary font-bold shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}>EN</button>
+              <button onClick={() => setUiLang('ES')} className={`flex-1 py-1 text-xs tracking-wider rounded-md transition-colors ${uiLang === 'ES' ? 'bg-primary-container text-on-primary font-bold shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}>ES</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   const levelIndex = LEVELS.indexOf(form.nivel);
   const vocabIndex = VOCAB_COMPLEXITY.indexOf(form.vocabulario);
 
   return (
-    <div className="bg-background text-on-surface font-body min-h-screen flex antialiased selection:bg-primary-container selection:text-on-primary-container dark h-screen w-full overflow-hidden">
+    <div className={`font-body min-h-screen flex antialiased selection:bg-primary-container selection:text-on-primary-container h-screen w-full overflow-hidden ${theme === 'dark' ? 'dark' : ''} bg-background text-on-surface`}>
       <Head>
         <title>MailCraft - AI Editorial Suite</title>
         <link rel="manifest" href="/manifest.json" />
@@ -154,14 +234,20 @@ export default function Home() {
             theme: {
               extend: {
                 colors: {
-                  "on-secondary": "#353026", "surface-container-high": "#2a2a2a", "primary-fixed-dim": "#ebc162",
-                  "on-tertiary-container": "#4c4600", "error": "#ffb4ab", "surface-dim": "#131313",
-                  "inverse-primary": "#785a00", "on-primary": "#3f2e00", "surface-container": "#201f1f",
-                  "surface-variant": "#353534", "tertiary": "#dad179", "surface-container-lowest": "#0e0e0e",
-                  "error-container": "#93000a", "inverse-on-surface": "#313030", "surface-container-low": "#1c1b1b",
-                  "background": "#131313", "primary": "#f4c969", "surface": "#131313",
-                  "surface-container-highest": "#353534", "on-surface": "#e5e2e1", "primary-container": "#d6ad50",
-                  "outline": "#99907c", "on-surface-variant": "#d0c5af", "outline-variant": "#4d4635"
+                  "background": "var(--bg-color)",
+                  "surface": "var(--surface-color)",
+                  "surface-container": "var(--surface-container)",
+                  "surface-container-low": "var(--surface-container-low)",
+                  "surface-container-highest": "var(--surface-container-highest)",
+                  "surface-container-lowest": "var(--surface-container-lowest)",
+                  "on-surface": "var(--text-main)",
+                  "on-surface-variant": "var(--text-muted)",
+                  "primary": "#f4c969",
+                  "primary-container": "#d6ad50",
+                  "on-primary": "#3f2e00",
+                  "error": "#ffb4ab",
+                  "error-container": "#93000a",
+                  "outline-variant": "var(--outline-var)",
                 },
                 fontFamily: { headline: ["Newsreader", "serif"], body: ["Manrope", "sans-serif"] }
               }
@@ -169,94 +255,121 @@ export default function Home() {
           }
         `}} />
         <style>{`
+          :root {
+            --bg-color: #f4f4f5;
+            --surface-color: #ffffff;
+            --surface-container: #ffffff;
+            --surface-container-low: #fafafa;
+            --surface-container-highest: #e4e4e7;
+            --surface-container-lowest: #f4f4f5;
+            --text-main: #18181b;
+            --text-muted: #52525b;
+            --outline-var: #d4d4d8;
+          }
+          .dark {
+            --bg-color: #131313;
+            --surface-color: #131313;
+            --surface-container: #201f1f;
+            --surface-container-low: #1c1b1b;
+            --surface-container-highest: #353534;
+            --surface-container-lowest: #0e0e0e;
+            --text-main: #e5e2e1;
+            --text-muted: #d0c5af;
+            --outline-var: #4d4635;
+          }
           .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; }
           .icon-fill { font-variation-settings: 'FILL' 1, 'wght' 400; }
           ::-webkit-scrollbar { width: 8px; height: 8px; }
-          ::-webkit-scrollbar-track { background: #131313; }
-          ::-webkit-scrollbar-thumb { background: #353534; border-radius: 4px; }
-          ::-webkit-scrollbar-thumb:hover { background: #4d4635; }
+          ::-webkit-scrollbar-track { background: var(--bg-color); }
+          ::-webkit-scrollbar-thumb { background: var(--surface-container-highest); border-radius: 4px; }
+          ::-webkit-scrollbar-thumb:hover { background: var(--outline-var); }
         `}</style>
       </Head>
 
-      <nav className="md:hidden fixed top-0 left-0 w-full z-40 flex justify-between items-center px-6 py-4 bg-[#0e0e0e]/90 backdrop-blur-md border-b border-outline-variant/20 shadow-md">
-        <div className="text-xl font-headline italic text-[#f4c969]">MailCraft</div>
-        <button onClick={() => setIsMobileMenuOpen(true)} className="text-[#f4c969] hover:text-[#d6ad50] transition-colors p-1 flex items-center justify-center">
-          <span className="material-symbols-outlined text-[28px]">menu</span>
-        </button>
+      {/* TOP BAR MÓVIL */}
+      <nav className="md:hidden fixed top-0 left-0 w-full z-40 flex justify-between items-center px-6 py-4 bg-surface-container-lowest/90 backdrop-blur-md border-b border-outline-variant/20 shadow-md">
+        <div className="text-xl font-headline italic text-primary">MailCraft</div>
+        <div className="flex gap-3 items-center">
+          <SettingsMenu />
+          <button onClick={() => setIsMobileMenuOpen(true)} className="text-primary hover:text-primary-container transition-colors p-1 flex items-center justify-center">
+            <span className="material-symbols-outlined text-[28px]">menu</span>
+          </button>
+        </div>
       </nav>
 
-      <div 
-        className={`fixed inset-0 bg-black/60 z-40 md:hidden transition-opacity duration-300 ${isMobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} 
-        onClick={() => setIsMobileMenuOpen(false)}
-      />
+      <div className={`fixed inset-0 bg-black/60 z-40 md:hidden transition-opacity duration-300 ${isMobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsMobileMenuOpen(false)} />
 
-      <aside className={`fixed md:relative top-0 left-0 h-full py-8 border-r border-[#353534]/20 bg-[#0e0e0e] w-64 flex-shrink-0 z-50 flex flex-col transition-transform duration-300 ease-in-out md:translate-x-0 ${isMobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}`}>
-        
-        <button onClick={() => setIsMobileMenuOpen(false)} className="md:hidden absolute top-5 right-5 text-on-surface-variant hover:text-[#f4c969] transition-colors">
+      <aside className={`fixed md:relative top-0 left-0 h-full py-8 border-r border-outline-variant/20 bg-surface-container-lowest w-64 flex-shrink-0 z-50 flex flex-col transition-transform duration-300 ease-in-out md:translate-x-0 ${isMobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}`}>
+        <button onClick={() => setIsMobileMenuOpen(false)} className="md:hidden absolute top-5 right-5 text-on-surface-variant hover:text-primary transition-colors">
            <span className="material-symbols-outlined text-[24px]">close</span>
         </button>
 
         <div className="px-8 mb-12 mt-2 md:mt-0">
-          <h1 className="text-xl font-headline text-[#f4c969] tracking-tight italic">MailCraft</h1>
-          <p className="text-[#e5e2e1]/50 mt-1 font-body text-xs tracking-wide uppercase">AI Editorial Suite</p>
+          <h1 className="text-xl font-headline text-primary tracking-tight italic">MailCraft</h1>
+          <p className="text-on-surface-variant mt-1 font-body text-xs tracking-wide uppercase">{t.appDesc}</p>
         </div>
 
         <nav className="flex-1 flex flex-col gap-1 mt-4">
-          <button onClick={() => handleNavClick('generator')} className={`flex items-center gap-4 px-8 py-3.5 font-body text-sm font-medium transition-all duration-300 w-full text-left ${currentView === 'generator' ? 'text-[#f4c969] border-r-2 border-[#f4c969] bg-gradient-to-r from-[#f4c969]/10 to-transparent translate-x-1' : 'text-[#e5e2e1]/50 hover:bg-[#201f1f] hover:text-[#e5e2e1] group'}`}>
-            <span className={`material-symbols-outlined text-[20px] ${currentView === 'generator' ? 'icon-fill' : 'group-hover:text-[#f4c969] transition-colors'}`}>auto_awesome</span>
-            Generator
+          <button onClick={() => handleNavClick('generator')} className={`flex items-center gap-4 px-8 py-3.5 font-body text-sm font-medium transition-all duration-300 w-full text-left ${currentView === 'generator' ? 'text-primary border-r-2 border-primary bg-gradient-to-r from-primary/10 to-transparent translate-x-1' : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface group'}`}>
+            <span className={`material-symbols-outlined text-[20px] ${currentView === 'generator' ? 'icon-fill' : 'group-hover:text-primary transition-colors'}`}>auto_awesome</span>
+            {t.genTab}
           </button>
           
-          <button onClick={() => handleNavClick('history')} className={`flex items-center gap-4 px-8 py-3.5 font-body text-sm font-medium transition-all duration-300 w-full text-left ${currentView === 'history' ? 'text-[#f4c969] border-r-2 border-[#f4c969] bg-gradient-to-r from-[#f4c969]/10 to-transparent translate-x-1' : 'text-[#e5e2e1]/50 hover:bg-[#201f1f] hover:text-[#e5e2e1] group'}`}>
-            <span className={`material-symbols-outlined text-[20px] ${currentView === 'history' ? 'icon-fill' : 'group-hover:text-[#f4c969] transition-colors'}`}>history</span>
-            History
+          <button onClick={() => handleNavClick('history')} className={`flex items-center gap-4 px-8 py-3.5 font-body text-sm font-medium transition-all duration-300 w-full text-left ${currentView === 'history' ? 'text-primary border-r-2 border-primary bg-gradient-to-r from-primary/10 to-transparent translate-x-1' : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface group'}`}>
+            <span className={`material-symbols-outlined text-[20px] ${currentView === 'history' ? 'icon-fill' : 'group-hover:text-primary transition-colors'}`}>history</span>
+            {t.histTab}
           </button>
         </nav>
 
         <div className="px-6 mt-auto">
           <button onClick={() => handleNavClick('generator')} className="w-full py-3.5 rounded-lg bg-gradient-to-br from-primary to-primary-container text-on-primary font-bold shadow-[0_4px_20px_rgba(244,201,105,0.15)] hover:shadow-[0_4px_25px_rgba(244,201,105,0.25)] hover:brightness-110 transition-all flex justify-center items-center gap-2">
-            <span className="material-symbols-outlined text-[20px]">edit</span> New Draft
+            <span className="material-symbols-outlined text-[20px]">edit</span> {t.newDraft}
           </button>
         </div>
       </aside>
 
       <main className="flex-1 h-full overflow-y-auto relative z-10 bg-background pt-24 pb-20 md:pt-0">
+        
+        {/* SETTINGS MENU PARA DESKTOP */}
+        <div className="hidden md:block absolute top-6 right-8 z-50">
+          <SettingsMenu />
+        </div>
+
         <div className="absolute top-0 left-1/4 w-1/2 h-96 bg-primary/5 rounded-full blur-[140px] pointer-events-none mix-blend-screen"></div>
         
         {currentView === 'generator' && (
           <div className="px-4 py-8 md:px-8 max-w-4xl mx-auto w-full relative z-10 md:pt-16">
             <header className="text-center mb-10 flex flex-col items-center">
               <h2 className="font-headline text-4xl md:text-5xl text-on-surface italic mb-2 tracking-tight">MailCraft</h2>
-              <p className="text-on-surface-variant text-sm md:text-base font-medium mb-4">AI-powered email generator</p>
+              <p className="text-on-surface-variant text-sm md:text-base font-medium mb-4">{t.appDesc}</p>
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-highest border border-outline-variant/30">
                 <span className="material-symbols-outlined text-[14px] text-primary icon-fill">star</span>
                 <span className="text-xs text-on-surface-variant uppercase tracking-wider font-semibold">Mistral Large</span>
               </div>
             </header>
 
-            <div className="bg-surface-container rounded-xl p-6 md:p-8 shadow-[0_20px_40px_rgba(0,0,0,0.4)] backdrop-blur-sm">
+            <div className="bg-surface-container rounded-xl p-6 md:p-8 shadow-[0_20px_40px_rgba(0,0,0,0.05)] backdrop-blur-sm border border-outline-variant/10">
               <form className="space-y-8" onSubmit={handleGenerate}>
                 
                 <div className="space-y-2">
-                  <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest">TOPIC / ASSIGNMENT</label>
-                  <textarea value={form.consigna} onChange={(e) => handleChange("consigna", e.target.value)} className="w-full bg-surface-container-low border-0 rounded-lg p-4 text-on-surface focus:ring-1 focus:ring-primary/40 focus:bg-surface-container-highest transition-all resize-none shadow-inner outline-none" placeholder="e.g. Write an email to the marketing team requesting an update..." rows="4" />
-                </div>
-
-                {/* NUEVOS CAMPOS: REMITENTE Y DESTINATARIO */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest">SENDER NAME <span className="text-outline lowercase font-normal italic">(optional)</span></label>
-                    <input type="text" value={form.nombreRemitente} onChange={(e) => handleChange("nombreRemitente", e.target.value)} className="w-full bg-surface-container-low border-0 rounded-lg p-4 text-on-surface focus:ring-1 focus:ring-primary/40 transition-all shadow-inner outline-none" placeholder="e.g. Max..." />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest">RECIPIENT NAME <span className="text-outline lowercase font-normal italic">(optional)</span></label>
-                    <input type="text" value={form.nombreDestinatario} onChange={(e) => handleChange("nombreDestinatario", e.target.value)} className="w-full bg-surface-container-low border-0 rounded-lg p-4 text-on-surface focus:ring-1 focus:ring-primary/40 transition-all shadow-inner outline-none" placeholder="e.g. John Doe..." />
-                  </div>
+                  <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest">{t.topic}</label>
+                  <textarea value={form.consigna} onChange={(e) => handleChange("consigna", e.target.value)} className="w-full bg-surface-container-low border-0 rounded-lg p-4 text-on-surface focus:ring-1 focus:ring-primary/40 focus:bg-surface-container-highest transition-all resize-none shadow-inner outline-none" placeholder={t.topicPl} rows="4" />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest">LANGUAGE</label>
+                    <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest">{t.sender} <span className="text-outline-variant lowercase font-normal italic">{t.opt}</span></label>
+                    <input type="text" value={form.nombreRemitente} onChange={(e) => handleChange("nombreRemitente", e.target.value)} className="w-full bg-surface-container-low border-0 rounded-lg p-4 text-on-surface focus:ring-1 focus:ring-primary/40 transition-all shadow-inner outline-none" placeholder={t.senderPl} />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest">{t.recipient} <span className="text-outline-variant lowercase font-normal italic">{t.opt}</span></label>
+                    <input type="text" value={form.nombreDestinatario} onChange={(e) => handleChange("nombreDestinatario", e.target.value)} className="w-full bg-surface-container-low border-0 rounded-lg p-4 text-on-surface focus:ring-1 focus:ring-primary/40 transition-all shadow-inner outline-none" placeholder={t.recipientPl} />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest">{t.lang}</label>
                     <div className="relative">
                       <select value={form.idioma} onChange={(e) => handleChange("idioma", e.target.value)} className="w-full appearance-none bg-surface-container-low border-0 rounded-lg p-4 text-on-surface focus:ring-1 focus:ring-primary/40 focus:bg-surface-container-highest transition-all shadow-inner pr-10 outline-none">
                         {LANGUAGES.map(l => <option key={l} value={l}>{l}</option>)}
@@ -269,12 +382,12 @@ export default function Home() {
 
                   <div className="space-y-2">
                     <div className="flex justify-between items-center mb-2">
-                      <label className="text-xs font-bold text-on-surface-variant uppercase tracking-widest">LENGTH (WORDS)</label>
+                      <label className="text-xs font-bold text-on-surface-variant uppercase tracking-widest">{t.length}</label>
                       <div className="bg-surface-container-highest rounded p-0.5">
                         <div className="relative flex w-full">
                           <div className="absolute top-0 bottom-0 w-1/2 bg-primary-container rounded shadow-sm transition-transform duration-300 ease-out z-0" style={{ transform: form.longitudType === "specific" ? "translateX(100%)" : "translateX(0)" }}></div>
-                          <button type="button" onClick={() => handleChange("longitudType", "range")} className={`relative z-10 flex-1 px-3 py-1 text-[10px] font-bold rounded uppercase tracking-wider transition-colors duration-300 ${form.longitudType === "range" ? "text-on-primary-fixed" : "text-on-surface-variant hover:text-on-surface"}`}>Range</button>
-                          <button type="button" onClick={() => handleChange("longitudType", "specific")} className={`relative z-10 flex-1 px-3 py-1 text-[10px] font-bold rounded uppercase tracking-wider transition-colors duration-300 ${form.longitudType === "specific" ? "text-on-primary-fixed" : "text-on-surface-variant hover:text-on-surface"}`}>Specific</button>
+                          <button type="button" onClick={() => handleChange("longitudType", "range")} className={`relative z-10 flex-1 px-3 py-1 text-[10px] font-bold rounded uppercase tracking-wider transition-colors duration-300 ${form.longitudType === "range" ? "text-on-primary" : "text-on-surface-variant hover:text-on-surface"}`}>{t.range}</button>
+                          <button type="button" onClick={() => handleChange("longitudType", "specific")} className={`relative z-10 flex-1 px-3 py-1 text-[10px] font-bold rounded uppercase tracking-wider transition-colors duration-300 ${form.longitudType === "specific" ? "text-on-primary" : "text-on-surface-variant hover:text-on-surface"}`}>{t.specific}</button>
                         </div>
                       </div>
                     </div>
@@ -293,36 +406,27 @@ export default function Home() {
                 </div>
 
                 <div className="space-y-3">
-                  <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest">LANGUAGE LEVEL (CEFR)</label>
+                  <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest">{t.level}</label>
                   <div className="relative flex justify-between w-full">
                     <div className="absolute inset-0 flex justify-between pointer-events-none z-0">
                       {LEVELS.map(lvl => (
                         <div key={`bg-${lvl}`} className="w-10 h-10 sm:w-12 sm:h-12 bg-surface-container-highest border border-outline-variant/20 rounded-full"></div>
                       ))}
                     </div>
-                    
-                    <div 
-                      className="absolute top-0 w-10 h-10 sm:w-12 sm:h-12 bg-primary-container rounded-full shadow-[0_0_15px_rgba(244,201,105,0.3)] ring-2 ring-primary/20 transition-all duration-300 ease-out z-10"
-                      style={{ left: `calc(${(levelIndex / 5) * 100}% - ${(levelIndex / 5)} * min(3rem, 2.5rem))` }}
-                    ></div>
-
+                    <div className="absolute top-0 w-10 h-10 sm:w-12 sm:h-12 bg-primary-container rounded-full shadow-[0_0_15px_rgba(244,201,105,0.3)] ring-2 ring-primary/20 transition-all duration-300 ease-out z-10" style={{ left: `calc(${(levelIndex / 5) * 100}% - ${(levelIndex / 5)} * min(3rem, 2.5rem))` }}></div>
                     {LEVELS.map(lvl => (
-                      <button key={lvl} type="button" onClick={() => handleChange("nivel", lvl)} className={`relative z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center font-medium transition-colors duration-300 text-sm sm:text-base ${form.nivel === lvl ? "text-on-primary-fixed font-bold" : "text-on-surface-variant hover:text-on-surface"}`}>
-                        {lvl}
-                      </button>
+                      <button key={lvl} type="button" onClick={() => handleChange("nivel", lvl)} className={`relative z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center font-medium transition-colors duration-300 text-sm sm:text-base ${form.nivel === lvl ? "text-on-primary font-bold" : "text-on-surface-variant hover:text-on-surface"}`}>{lvl}</button>
                     ))}
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest">VOCABULARY COMPLEXITY</label>
+                  <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest">{t.vocab}</label>
                   <div className="bg-surface-container-low p-1 rounded-lg">
                     <div className="relative flex w-full">
                       <div className="absolute top-0 bottom-0 w-[33.333%] bg-surface-container-highest shadow-sm border border-outline-variant/20 rounded-md transition-transform duration-300 ease-out z-0" style={{ transform: `translateX(${vocabIndex * 100}%)` }}></div>
                       {VOCAB_COMPLEXITY.map((v) => (
-                        <button key={v} type="button" onClick={() => handleChange("vocabulario", v)} className={`relative z-10 flex-1 py-3 px-1 sm:px-2 rounded-md text-[11px] sm:text-sm transition-colors duration-300 ${form.vocabulario === v ? "font-bold text-primary" : "font-medium text-on-surface-variant hover:text-on-surface"}`}>
-                          {v}
-                        </button>
+                        <button key={v} type="button" onClick={() => handleChange("vocabulario", v)} className={`relative z-10 flex-1 py-3 px-1 sm:px-2 rounded-md text-[11px] sm:text-sm transition-colors duration-300 ${form.vocabulario === v ? "font-bold text-primary" : "font-medium text-on-surface-variant hover:text-on-surface"}`}>{v}</button>
                       ))}
                     </div>
                   </div>
@@ -330,9 +434,9 @@ export default function Home() {
 
                 <div className="space-y-2">
                   <div className="flex justify-between items-baseline">
-                    <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest">REQUIRED VOCABULARY <span className="text-outline lowercase font-normal italic">(optional)</span></label>
+                    <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest">{t.reqVocab} <span className="text-outline-variant lowercase font-normal italic">{t.opt}</span></label>
                   </div>
-                  <input type="text" value={form.vocabularioExtra} onChange={(e) => handleChange("vocabularioExtra", e.target.value)} className="w-full bg-surface-container-low border-0 rounded-lg p-4 text-on-surface focus:ring-1 focus:ring-primary/40 transition-all shadow-inner outline-none" placeholder="synergy, pivot, robust..." />
+                  <input type="text" value={form.vocabularioExtra} onChange={(e) => handleChange("vocabularioExtra", e.target.value)} className="w-full bg-surface-container-low border-0 rounded-lg p-4 text-on-surface focus:ring-1 focus:ring-primary/40 transition-all shadow-inner outline-none" placeholder={t.vocabPl} />
                 </div>
 
                 {error && <div className="text-[#ffb4ab] text-sm bg-[#93000a]/20 p-3 rounded-lg border border-[#93000a]/50">{error}</div>}
@@ -340,15 +444,15 @@ export default function Home() {
                 <div className="pt-6">
                   <button type="submit" disabled={loading} className={`w-full flex items-center justify-center gap-3 bg-gradient-to-r from-primary to-primary-container text-on-primary font-bold text-lg py-5 rounded-xl shadow-[0_10px_20px_rgba(244,201,105,0.15)] hover:shadow-[0_10px_25px_rgba(244,201,105,0.25)] hover:brightness-110 transition-all active:scale-[0.98] ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}>
                     <span className="material-symbols-outlined text-[24px]">{loading ? 'hourglass_empty' : 'mail'}</span>
-                    {loading ? 'Crafting Email...' : 'Generate Email'}
+                    {loading ? t.btnGenIng : t.btnGen}
                   </button>
                 </div>
               </form>
             </div>
 
             {result && (
-              <div ref={resultRef} className="mt-8 bg-surface-container rounded-xl p-6 md:p-8 shadow-[0_20px_40px_rgba(0,0,0,0.4)] border border-primary/20">
-                 <h3 className="font-headline text-2xl text-primary mb-4">Generated Result</h3>
+              <div ref={resultRef} className="mt-8 bg-surface-container rounded-xl p-6 md:p-8 shadow-[0_20px_40px_rgba(0,0,0,0.05)] border border-primary/20">
+                 <h3 className="font-headline text-2xl text-primary mb-4">{t.resTitle}</h3>
                  
                  <div className="bg-surface-container-low p-5 rounded-lg border border-outline-variant/20 mb-6">
                    <pre className="text-on-surface font-body whitespace-pre-wrap text-sm leading-relaxed">{result}</pre>
@@ -356,36 +460,15 @@ export default function Home() {
                  
                  <div className="border-t border-surface-container-highest pt-6">
                    <div className="flex flex-wrap gap-3">
-                     <button onClick={() => navigator.clipboard.writeText(result)} className="flex-1 px-4 py-3 bg-surface-container-highest text-primary rounded-lg text-sm font-bold hover:bg-surface-bright transition-colors border border-outline-variant/30 flex justify-center items-center gap-2">
-                       <span className="material-symbols-outlined text-[18px]">content_copy</span> Copy
+                     <button onClick={() => navigator.clipboard.writeText(result)} className="flex-1 px-4 py-3 bg-surface-container-highest text-primary rounded-lg text-sm font-bold hover:brightness-110 transition-colors border border-outline-variant/30 flex justify-center items-center gap-2">
+                       <span className="material-symbols-outlined text-[18px]">content_copy</span> {t.btnCopy}
                      </button>
                      
                      <button onClick={handleHumanize} disabled={isHumanizing} className={`flex-[1.5] px-4 py-3 bg-transparent text-primary rounded-lg text-sm font-bold hover:bg-primary/10 transition-colors border border-primary/40 flex justify-center items-center gap-2 ${isHumanizing ? 'opacity-70 cursor-not-allowed' : ''}`}>
                        <span className="material-symbols-outlined text-[18px]">{isHumanizing ? 'sync' : 'psychology_alt'}</span> 
-                       {isHumanizing ? 'Humanizing...' : 'Humanize Text'}
-                     </button>
-
-                     <button onClick={handleDetect} disabled={isDetecting} className={`flex-[1.5] px-4 py-3 bg-transparent text-on-surface rounded-lg text-sm font-bold hover:bg-surface-container-highest transition-colors border border-outline-variant/40 flex justify-center items-center gap-2 ${isDetecting ? 'opacity-70 cursor-not-allowed' : ''}`}>
-                       <span className="material-symbols-outlined text-[18px]">{isDetecting ? 'radar' : 'policy'}</span> 
-                       {isDetecting ? 'Scanning...' : 'AI Detector'}
+                       {isHumanizing ? t.btnHumIng : t.btnHum}
                      </button>
                    </div>
-
-                   {aiScore !== null && (
-                     <div className="mt-6 p-5 bg-[#0e0e0e] rounded-xl border border-[#353534]/50 shadow-inner">
-                        <div className="flex justify-between items-center mb-3">
-                          <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Sapling.ai Analysis</span>
-                        </div>
-                        <div className="flex items-center justify-between mb-2 font-body font-bold text-sm">
-                           <span className="text-emerald-400 flex items-center gap-1"><span className="material-symbols-outlined text-[16px]">face</span> Human: {100 - aiScore}%</span>
-                           <span className="text-rose-400 flex items-center gap-1">AI: {aiScore}% <span className="material-symbols-outlined text-[16px]">smart_toy</span></span>
-                        </div>
-                        <div className="w-full bg-surface-container-highest rounded-full h-2.5 flex overflow-hidden ring-1 ring-black/50">
-                           <div style={{ width: `${100 - aiScore}%` }} className="bg-gradient-to-r from-emerald-500 to-emerald-400 h-full transition-all duration-1000 ease-out"></div>
-                           <div style={{ width: `${aiScore}%` }} className="bg-gradient-to-r from-rose-400 to-rose-500 h-full transition-all duration-1000 ease-out"></div>
-                        </div>
-                     </div>
-                   )}
                  </div>
               </div>
             )}
@@ -395,16 +478,16 @@ export default function Home() {
         {currentView === 'history' && (
           <div className="max-w-6xl mx-auto px-6 py-8 md:px-12 md:py-16 relative z-10 md:pt-16">
             <header className="mb-14">
-              <h2 className="text-4xl md:text-5xl font-headline text-on-surface tracking-tight mb-3">Email History</h2>
-              <p className="text-on-surface-variant text-sm md:text-lg font-body max-w-2xl leading-relaxed">Your archive of crafted correspondence. Review, replicate, or refine past communications.</p>
+              <h2 className="text-4xl md:text-5xl font-headline text-on-surface tracking-tight mb-3">{t.histTitle}</h2>
+              <p className="text-on-surface-variant text-sm md:text-lg font-body max-w-2xl leading-relaxed">{t.histSub}</p>
             </header>
 
             {history.length === 0 ? (
               <div className="text-center py-20 bg-surface-container-low rounded-xl border border-outline-variant/10">
                 <span className="material-symbols-outlined text-6xl text-outline-variant mb-4">inbox</span>
-                <h3 className="text-xl font-headline text-on-surface mb-2">No history yet</h3>
-                <p className="text-on-surface-variant text-sm">Emails you generate will automatically be saved here.</p>
-                <button onClick={() => handleNavClick('generator')} className="mt-6 px-6 py-2 bg-primary-container text-on-primary-fixed rounded-lg text-sm font-bold shadow-sm hover:brightness-110">Go Generate One</button>
+                <h3 className="text-xl font-headline text-on-surface mb-2">{t.noHist}</h3>
+                <p className="text-on-surface-variant text-sm">{t.noHistSub}</p>
+                <button onClick={() => handleNavClick('generator')} className="mt-6 px-6 py-2 bg-primary-container text-on-primary rounded-lg text-sm font-bold shadow-sm hover:brightness-110">{t.goGen}</button>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
