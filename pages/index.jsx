@@ -5,7 +5,7 @@ const LANGUAGES = ["English", "Spanish", "French", "German", "Italian", "Portugu
 const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 const VOCAB_COMPLEXITY = ["Simple", "Intermediate", "Complex"];
 
-// DICCIONARIO PARA LA INTERFAZ
+// DICCIONARIO PARA LA INTERFAZ EXPANDIDO
 const UI = {
   EN: {
     appDesc: "AI-powered email generator",
@@ -90,7 +90,17 @@ export default function Home() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
   const [form, setForm] = useState({
-    consigna: "", idioma: "English", longitudType: "range", longitudMin: "120", longitudMax: "140", longitudSpecific: "", nivel: "B1", vocabulario: "Intermediate", vocabularioExtra: "", nombreRemitente: "", nombreDestinatario: ""
+    consigna: "", 
+    idioma: "English", 
+    longitudType: "range", 
+    longitudMin: "120", 
+    longitudMax: "140", 
+    longitudSpecific: "", 
+    nivel: "B1", 
+    vocabulario: "Intermediate", 
+    vocabularioExtra: "", 
+    nombreRemitente: "", 
+    nombreDestinatario: ""
   });
   
   const [loading, setLoading] = useState(false);
@@ -115,6 +125,7 @@ export default function Home() {
     let lengthInstruction = form.longitudType === "range" 
       ? `between ${form.longitudMin} and ${form.longitudMax} words` 
       : `exactly ${form.longitudSpecific} words`;
+      
     const vocabExtra = form.vocabularioExtra.trim() ? `\n- Include these words: ${form.vocabularioExtra}.` : "";
     const senderInfo = form.nombreRemitente.trim() ? `\n- Sender Name: ${form.nombreRemitente}` : "";
     const recipientInfo = form.nombreDestinatario.trim() ? `\n- Recipient Name: ${form.nombreDestinatario}` : "";
@@ -125,11 +136,14 @@ export default function Home() {
   const handleGenerate = async (e) => {
     e.preventDefault();
     if (!form.consigna.trim()) return setError("Please enter a topic.");
-    setLoading(true); setResult(null); setError(null);
+    setLoading(true); 
+    setResult(null); 
+    setError(null);
 
     try {
       const res = await fetch("/api/generate", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST", 
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: buildPrompt() }),
       });
       const data = await res.json();
@@ -146,6 +160,7 @@ export default function Home() {
         vocab: form.vocabulario,
         content: newEmail
       };
+      
       const updatedHistory = [newRecord, ...history];
       setHistory(updatedHistory);
       localStorage.setItem("mailcraft_history", JSON.stringify(updatedHistory));
@@ -164,7 +179,8 @@ export default function Home() {
     setError(null);
     try {
       const res = await fetch("/api/humanize", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST", 
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: result }),
       });
       const data = await res.json();
@@ -191,23 +207,47 @@ export default function Home() {
   // MINI-COMPONENTE: Menú de Ajustes
   const SettingsMenu = () => (
     <div className="relative">
-      <button onClick={() => setIsSettingsOpen(!isSettingsOpen)} className="p-2 rounded-full bg-surface-container shadow-md border border-outline-variant/30 text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center">
+      <button 
+        onClick={() => setIsSettingsOpen(!isSettingsOpen)} 
+        className="p-2 rounded-full bg-surface-container shadow-lg border border-outline-variant/30 text-on-surface-variant hover:text-primary active:scale-90 transition-all duration-200 flex items-center justify-center z-50"
+      >
         <span className="material-symbols-outlined text-[24px]">settings</span>
       </button>
+      
       {isSettingsOpen && (
-        <div className="absolute top-full right-0 mt-3 w-56 bg-surface-container-high rounded-xl shadow-[0_20px_40px_rgba(0,0,0,0.5)] border border-outline-variant/30 p-4 flex flex-col gap-4 z-50">
+        <div className="absolute top-full right-0 mt-3 w-56 bg-surface-container-high/95 backdrop-blur-xl rounded-xl shadow-[0_20px_40px_rgba(0,0,0,0.5)] border border-outline-variant/30 p-4 flex flex-col gap-4 z-[100]">
           <div>
             <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2 block">{t.theme}</label>
             <div className="flex bg-surface-container-lowest rounded-lg p-1 border border-outline-variant/10">
-              <button onClick={() => setTheme('light')} className={`flex-1 py-1.5 text-sm rounded-md transition-colors flex justify-center items-center ${theme === 'light' ? 'bg-primary-container text-on-primary font-bold shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}><span className="material-symbols-outlined text-[18px]">light_mode</span></button>
-              <button onClick={() => setTheme('dark')} className={`flex-1 py-1.5 text-sm rounded-md transition-colors flex justify-center items-center ${theme === 'dark' ? 'bg-primary-container text-on-primary font-bold shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}><span className="material-symbols-outlined text-[18px]">dark_mode</span></button>
+              <button 
+                onClick={() => setTheme('light')} 
+                className={`flex-1 py-1.5 text-sm rounded-md transition-all active:scale-95 flex justify-center items-center ${theme === 'light' ? 'bg-primary text-on-primary font-bold shadow-md' : 'text-on-surface-variant hover:text-on-surface'}`}
+              >
+                <span className="material-symbols-outlined text-[18px]">light_mode</span>
+              </button>
+              <button 
+                onClick={() => setTheme('dark')} 
+                className={`flex-1 py-1.5 text-sm rounded-md transition-all active:scale-95 flex justify-center items-center ${theme === 'dark' ? 'bg-primary text-on-primary font-bold shadow-md' : 'text-on-surface-variant hover:text-on-surface'}`}
+              >
+                <span className="material-symbols-outlined text-[18px]">dark_mode</span>
+              </button>
             </div>
           </div>
           <div>
             <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2 block">{t.appLang}</label>
             <div className="flex bg-surface-container-lowest rounded-lg p-1 border border-outline-variant/10">
-              <button onClick={() => setUiLang('EN')} className={`flex-1 py-1 text-xs tracking-wider rounded-md transition-colors ${uiLang === 'EN' ? 'bg-primary-container text-on-primary font-bold shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}>EN</button>
-              <button onClick={() => setUiLang('ES')} className={`flex-1 py-1 text-xs tracking-wider rounded-md transition-colors ${uiLang === 'ES' ? 'bg-primary-container text-on-primary font-bold shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}>ES</button>
+              <button 
+                onClick={() => setUiLang('EN')} 
+                className={`flex-1 py-1 text-xs tracking-wider rounded-md transition-all active:scale-95 ${uiLang === 'EN' ? 'bg-primary text-on-primary font-bold' : 'text-on-surface-variant'}`}
+              >
+                EN
+              </button>
+              <button 
+                onClick={() => setUiLang('ES')} 
+                className={`flex-1 py-1 text-xs tracking-wider rounded-md transition-all active:scale-95 ${uiLang === 'ES' ? 'bg-primary text-on-primary font-bold' : 'text-on-surface-variant'}`}
+              >
+                ES
+              </button>
             </div>
           </div>
         </div>
@@ -219,12 +259,10 @@ export default function Home() {
   const vocabIndex = VOCAB_COMPLEXITY.indexOf(form.vocabulario);
 
   return (
-    <div className={`font-body min-h-screen flex antialiased selection:bg-primary-container selection:text-on-primary-container h-screen w-full overflow-hidden ${theme === 'dark' ? 'dark' : ''} bg-background text-on-surface`}>
+    <div className={`font-body min-h-screen flex antialiased h-screen w-full overflow-hidden ${theme === 'dark' ? 'dark' : ''} bg-background text-on-surface`}>
       <Head>
         <title>MailCraft - AI Editorial Suite</title>
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#131313" />
-        <link rel="apple-touch-icon" href="https://i.postimg.cc/1XfP6k97/37730-removebg-preview.png" />
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
         <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,400;0,600;1,400&display=swap" rel="stylesheet"/>
         <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
@@ -238,6 +276,7 @@ export default function Home() {
                   "surface": "var(--surface-color)",
                   "surface-container": "var(--surface-container)",
                   "surface-container-low": "var(--surface-container-low)",
+                  "surface-container-high": "var(--surface-container-high)",
                   "surface-container-highest": "var(--surface-container-highest)",
                   "surface-container-lowest": "var(--surface-container-lowest)",
                   "on-surface": "var(--text-main)",
@@ -260,6 +299,7 @@ export default function Home() {
             --surface-color: #ffffff;
             --surface-container: #ffffff;
             --surface-container-low: #fafafa;
+            --surface-container-high: #f0f0f0;
             --surface-container-highest: #e4e4e7;
             --surface-container-lowest: #f4f4f5;
             --text-main: #18181b;
@@ -271,6 +311,7 @@ export default function Home() {
             --surface-color: #131313;
             --surface-container: #201f1f;
             --surface-container-low: #1c1b1b;
+            --surface-container-high: #2a2a2a;
             --surface-container-highest: #353534;
             --surface-container-lowest: #0e0e0e;
             --text-main: #e5e2e1;
@@ -286,21 +327,32 @@ export default function Home() {
         `}</style>
       </Head>
 
-      {/* TOP BAR MÓVIL */}
-      <nav className="md:hidden fixed top-0 left-0 w-full z-40 flex justify-between items-center px-6 py-4 bg-surface-container-lowest/90 backdrop-blur-md border-b border-outline-variant/20 shadow-md">
+      {/* MOBILE TOP BAR - SÓLIDA */}
+      <nav className="md:hidden fixed top-0 left-0 w-full z-40 flex justify-between items-center px-6 py-4 bg-surface-container-lowest border-b border-outline-variant/20 shadow-md">
         <div className="text-xl font-headline italic text-primary">MailCraft</div>
         <div className="flex gap-3 items-center">
           <SettingsMenu />
-          <button onClick={() => setIsMobileMenuOpen(true)} className="text-primary hover:text-primary-container transition-colors p-1 flex items-center justify-center">
+          <button 
+            onClick={() => setIsMobileMenuOpen(true)} 
+            className="text-primary active:scale-90 transition-all p-1 flex items-center justify-center"
+          >
             <span className="material-symbols-outlined text-[28px]">menu</span>
           </button>
         </div>
       </nav>
 
-      <div className={`fixed inset-0 bg-black/60 z-40 md:hidden transition-opacity duration-300 ${isMobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsMobileMenuOpen(false)} />
+      {/* OVERLAY OSCURO PARA EL MENÚ MOBILE */}
+      <div 
+        className={`fixed inset-0 bg-black/60 z-40 md:hidden transition-opacity duration-300 ${isMobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} 
+        onClick={() => setIsMobileMenuOpen(false)} 
+      />
 
-      <aside className={`fixed md:relative top-0 left-0 h-full py-8 border-r border-outline-variant/20 bg-surface-container-lowest w-64 flex-shrink-0 z-50 flex flex-col transition-transform duration-300 ease-in-out md:translate-x-0 ${isMobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}`}>
-        <button onClick={() => setIsMobileMenuOpen(false)} className="md:hidden absolute top-5 right-5 text-on-surface-variant hover:text-primary transition-colors">
+      {/* ASIDE - CON FONDO SÓLIDO Y BLUR */}
+      <aside className={`fixed md:relative top-0 left-0 h-full py-8 border-r border-outline-variant/20 bg-surface-container-lowest/98 backdrop-blur-xl w-64 flex-shrink-0 z-50 flex flex-col transition-transform duration-300 ease-in-out md:translate-x-0 ${isMobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}`}>
+        <button 
+          onClick={() => setIsMobileMenuOpen(false)} 
+          className="md:hidden absolute top-5 right-5 text-on-surface-variant hover:text-primary active:scale-90 transition-all"
+        >
            <span className="material-symbols-outlined text-[24px]">close</span>
         </button>
 
@@ -310,19 +362,28 @@ export default function Home() {
         </div>
 
         <nav className="flex-1 flex flex-col gap-1 mt-4">
-          <button onClick={() => handleNavClick('generator')} className={`flex items-center gap-4 px-8 py-3.5 font-body text-sm font-medium transition-all duration-300 w-full text-left ${currentView === 'generator' ? 'text-primary border-r-2 border-primary bg-gradient-to-r from-primary/10 to-transparent translate-x-1' : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface group'}`}>
+          <button 
+            onClick={() => {setCurrentView('generator'); setIsMobileMenuOpen(false);}} 
+            className={`flex items-center gap-4 px-8 py-3.5 font-body text-sm font-medium transition-all duration-300 active:scale-95 w-full text-left ${currentView === 'generator' ? 'text-primary border-r-4 border-primary bg-gradient-to-r from-primary/10 to-transparent translate-x-1' : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface group'}`}
+          >
             <span className={`material-symbols-outlined text-[20px] ${currentView === 'generator' ? 'icon-fill' : 'group-hover:text-primary transition-colors'}`}>auto_awesome</span>
             {t.genTab}
           </button>
           
-          <button onClick={() => handleNavClick('history')} className={`flex items-center gap-4 px-8 py-3.5 font-body text-sm font-medium transition-all duration-300 w-full text-left ${currentView === 'history' ? 'text-primary border-r-2 border-primary bg-gradient-to-r from-primary/10 to-transparent translate-x-1' : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface group'}`}>
+          <button 
+            onClick={() => {setCurrentView('history'); setIsMobileMenuOpen(false);}} 
+            className={`flex items-center gap-4 px-8 py-3.5 font-body text-sm font-medium transition-all duration-300 active:scale-95 w-full text-left ${currentView === 'history' ? 'text-primary border-r-4 border-primary bg-gradient-to-r from-primary/10 to-transparent translate-x-1' : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface group'}`}
+          >
             <span className={`material-symbols-outlined text-[20px] ${currentView === 'history' ? 'icon-fill' : 'group-hover:text-primary transition-colors'}`}>history</span>
             {t.histTab}
           </button>
         </nav>
 
         <div className="px-6 mt-auto">
-          <button onClick={() => handleNavClick('generator')} className="w-full py-3.5 rounded-lg bg-gradient-to-br from-primary to-primary-container text-on-primary font-bold shadow-[0_4px_20px_rgba(244,201,105,0.15)] hover:shadow-[0_4px_25px_rgba(244,201,105,0.25)] hover:brightness-110 transition-all flex justify-center items-center gap-2">
+          <button 
+            onClick={() => handleNavClick('generator')} 
+            className="w-full py-3.5 rounded-lg bg-gradient-to-br from-primary to-primary-container text-on-primary font-bold shadow-[0_4px_20px_rgba(244,201,105,0.15)] hover:shadow-[0_4px_25px_rgba(244,201,105,0.25)] hover:brightness-110 active:scale-95 transition-all flex justify-center items-center gap-2"
+          >
             <span className="material-symbols-outlined text-[20px]">edit</span> {t.newDraft}
           </button>
         </div>
@@ -348,22 +409,40 @@ export default function Home() {
               </div>
             </header>
 
-            <div className="bg-surface-container rounded-xl p-6 md:p-8 shadow-[0_20px_40px_rgba(0,0,0,0.05)] backdrop-blur-sm border border-outline-variant/10">
+            <div className="bg-surface-container rounded-2xl p-6 md:p-8 shadow-xl border border-outline-variant/10 backdrop-blur-sm">
               <form className="space-y-8" onSubmit={handleGenerate}>
                 
                 <div className="space-y-2">
                   <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest">{t.topic}</label>
-                  <textarea value={form.consigna} onChange={(e) => handleChange("consigna", e.target.value)} className="w-full bg-surface-container-low border-0 rounded-lg p-4 text-on-surface focus:ring-1 focus:ring-primary/40 focus:bg-surface-container-highest transition-all resize-none shadow-inner outline-none" placeholder={t.topicPl} rows="4" />
+                  <textarea 
+                    value={form.consigna} 
+                    onChange={(e) => handleChange("consigna", e.target.value)} 
+                    className="w-full bg-surface-container-low border-0 rounded-xl p-4 text-on-surface focus:ring-2 focus:ring-primary/40 focus:bg-surface-container-highest transition-all resize-none shadow-inner outline-none" 
+                    placeholder={t.topicPl} 
+                    rows="4" 
+                  />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest">{t.sender} <span className="text-outline-variant lowercase font-normal italic">{t.opt}</span></label>
-                    <input type="text" value={form.nombreRemitente} onChange={(e) => handleChange("nombreRemitente", e.target.value)} className="w-full bg-surface-container-low border-0 rounded-lg p-4 text-on-surface focus:ring-1 focus:ring-primary/40 transition-all shadow-inner outline-none" placeholder={t.senderPl} />
+                    <input 
+                      type="text" 
+                      value={form.nombreRemitente} 
+                      onChange={(e) => handleChange("nombreRemitente", e.target.value)} 
+                      className="w-full bg-surface-container-low border-0 rounded-xl p-4 text-on-surface focus:ring-2 focus:ring-primary/40 transition-all shadow-inner outline-none" 
+                      placeholder={t.senderPl} 
+                    />
                   </div>
                   <div className="space-y-2">
                     <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest">{t.recipient} <span className="text-outline-variant lowercase font-normal italic">{t.opt}</span></label>
-                    <input type="text" value={form.nombreDestinatario} onChange={(e) => handleChange("nombreDestinatario", e.target.value)} className="w-full bg-surface-container-low border-0 rounded-lg p-4 text-on-surface focus:ring-1 focus:ring-primary/40 transition-all shadow-inner outline-none" placeholder={t.recipientPl} />
+                    <input 
+                      type="text" 
+                      value={form.nombreDestinatario} 
+                      onChange={(e) => handleChange("nombreDestinatario", e.target.value)} 
+                      className="w-full bg-surface-container-low border-0 rounded-xl p-4 text-on-surface focus:ring-2 focus:ring-primary/40 transition-all shadow-inner outline-none" 
+                      placeholder={t.recipientPl} 
+                    />
                   </div>
                 </div>
 
@@ -371,7 +450,11 @@ export default function Home() {
                   <div className="space-y-2">
                     <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest">{t.lang}</label>
                     <div className="relative">
-                      <select value={form.idioma} onChange={(e) => handleChange("idioma", e.target.value)} className="w-full appearance-none bg-surface-container-low border-0 rounded-lg p-4 text-on-surface focus:ring-1 focus:ring-primary/40 focus:bg-surface-container-highest transition-all shadow-inner pr-10 outline-none">
+                      <select 
+                        value={form.idioma} 
+                        onChange={(e) => handleChange("idioma", e.target.value)} 
+                        className="w-full appearance-none bg-surface-container-low border-0 rounded-xl p-4 text-on-surface focus:ring-2 focus:ring-primary/40 focus:bg-surface-container-highest transition-all shadow-inner pr-10 outline-none"
+                      >
                         {LANGUAGES.map(l => <option key={l} value={l}>{l}</option>)}
                       </select>
                       <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-on-surface-variant">
@@ -394,12 +477,12 @@ export default function Home() {
                     <div className="flex items-center gap-2">
                       {form.longitudType === "range" ? (
                         <>
-                          <input type="number" value={form.longitudMin} onChange={(e) => handleChange("longitudMin", e.target.value)} className="w-full bg-surface-container-low border-0 rounded-lg p-4 text-on-surface text-center shadow-inner outline-none focus:ring-1 focus:ring-primary/40" placeholder="Min" />
+                          <input type="number" value={form.longitudMin} onChange={(e) => handleChange("longitudMin", e.target.value)} className="w-full bg-surface-container-low border-0 rounded-xl p-4 text-on-surface text-center shadow-inner outline-none focus:ring-2 focus:ring-primary/40" placeholder="Min" />
                           <span className="text-outline-variant font-bold">—</span>
-                          <input type="number" value={form.longitudMax} onChange={(e) => handleChange("longitudMax", e.target.value)} className="w-full bg-surface-container-low border-0 rounded-lg p-4 text-on-surface text-center shadow-inner outline-none focus:ring-1 focus:ring-primary/40" placeholder="Max" />
+                          <input type="number" value={form.longitudMax} onChange={(e) => handleChange("longitudMax", e.target.value)} className="w-full bg-surface-container-low border-0 rounded-xl p-4 text-on-surface text-center shadow-inner outline-none focus:ring-2 focus:ring-primary/40" placeholder="Max" />
                         </>
                       ) : (
-                        <input type="number" value={form.longitudSpecific} onChange={(e) => handleChange("longitudSpecific", e.target.value)} className="w-full bg-surface-container-low border-0 rounded-lg p-4 text-on-surface text-center shadow-inner outline-none focus:ring-1 focus:ring-primary/40" placeholder="e.g. 150" />
+                        <input type="number" value={form.longitudSpecific} onChange={(e) => handleChange("longitudSpecific", e.target.value)} className="w-full bg-surface-container-low border-0 rounded-xl p-4 text-on-surface text-center shadow-inner outline-none focus:ring-2 focus:ring-primary/40" placeholder="e.g. 150" />
                       )}
                     </div>
                   </div>
@@ -407,26 +490,38 @@ export default function Home() {
 
                 <div className="space-y-3">
                   <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest">{t.level}</label>
-                  <div className="relative flex justify-between w-full">
-                    <div className="absolute inset-0 flex justify-between pointer-events-none z-0">
-                      {LEVELS.map(lvl => (
-                        <div key={`bg-${lvl}`} className="w-10 h-10 sm:w-12 sm:h-12 bg-surface-container-highest border border-outline-variant/20 rounded-full"></div>
-                      ))}
-                    </div>
-                    <div className="absolute top-0 w-10 h-10 sm:w-12 sm:h-12 bg-primary-container rounded-full shadow-[0_0_15px_rgba(244,201,105,0.3)] ring-2 ring-primary/20 transition-all duration-300 ease-out z-10" style={{ left: `calc(${(levelIndex / 5) * 100}% - ${(levelIndex / 5)} * min(3rem, 2.5rem))` }}></div>
+                  <div className="relative flex justify-between items-center w-full bg-surface-container-low p-2 rounded-full h-14 border border-outline-variant/10">
+                    <div 
+                      className="absolute top-2 h-10 bg-primary rounded-full transition-all duration-300 ease-out shadow-[0_0_15px_rgba(244,201,105,0.3)] z-0" 
+                      style={{ width: 'calc(100% / 6 - 8px)', left: `calc(${levelIndex} * (100% / 6) + 4px)` }}
+                    ></div>
                     {LEVELS.map(lvl => (
-                      <button key={lvl} type="button" onClick={() => handleChange("nivel", lvl)} className={`relative z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center font-medium transition-colors duration-300 text-sm sm:text-base ${form.nivel === lvl ? "text-on-primary font-bold" : "text-on-surface-variant hover:text-on-surface"}`}>{lvl}</button>
+                      <button 
+                        key={lvl} 
+                        type="button" 
+                        onClick={() => handleChange("nivel", lvl)} 
+                        className={`relative z-10 flex-1 flex justify-center items-center h-full text-sm font-bold transition-colors duration-300 ${form.nivel === lvl ? "text-on-primary" : "text-on-surface-variant hover:text-on-surface"}`}
+                      >
+                        {lvl}
+                      </button>
                     ))}
                   </div>
                 </div>
 
                 <div className="space-y-3">
                   <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest">{t.vocab}</label>
-                  <div className="bg-surface-container-low p-1 rounded-lg">
+                  <div className="bg-surface-container-low p-1 rounded-xl border border-outline-variant/10">
                     <div className="relative flex w-full">
-                      <div className="absolute top-0 bottom-0 w-[33.333%] bg-surface-container-highest shadow-sm border border-outline-variant/20 rounded-md transition-transform duration-300 ease-out z-0" style={{ transform: `translateX(${vocabIndex * 100}%)` }}></div>
+                      <div className="absolute top-0 bottom-0 w-[33.333%] bg-surface-container-highest shadow-sm border border-outline-variant/20 rounded-lg transition-transform duration-300 ease-out z-0" style={{ transform: `translateX(${vocabIndex * 100}%)` }}></div>
                       {VOCAB_COMPLEXITY.map((v) => (
-                        <button key={v} type="button" onClick={() => handleChange("vocabulario", v)} className={`relative z-10 flex-1 py-3 px-1 sm:px-2 rounded-md text-[11px] sm:text-sm transition-colors duration-300 ${form.vocabulario === v ? "font-bold text-primary" : "font-medium text-on-surface-variant hover:text-on-surface"}`}>{v}</button>
+                        <button 
+                          key={v} 
+                          type="button" 
+                          onClick={() => handleChange("vocabulario", v)} 
+                          className={`relative z-10 flex-1 py-3 px-1 sm:px-2 rounded-lg text-[11px] sm:text-sm transition-colors duration-300 ${form.vocabulario === v ? "font-bold text-primary" : "font-medium text-on-surface-variant hover:text-on-surface"}`}
+                        >
+                          {v}
+                        </button>
                       ))}
                     </div>
                   </div>
@@ -436,13 +531,23 @@ export default function Home() {
                   <div className="flex justify-between items-baseline">
                     <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest">{t.reqVocab} <span className="text-outline-variant lowercase font-normal italic">{t.opt}</span></label>
                   </div>
-                  <input type="text" value={form.vocabularioExtra} onChange={(e) => handleChange("vocabularioExtra", e.target.value)} className="w-full bg-surface-container-low border-0 rounded-lg p-4 text-on-surface focus:ring-1 focus:ring-primary/40 transition-all shadow-inner outline-none" placeholder={t.vocabPl} />
+                  <input 
+                    type="text" 
+                    value={form.vocabularioExtra} 
+                    onChange={(e) => handleChange("vocabularioExtra", e.target.value)} 
+                    className="w-full bg-surface-container-low border-0 rounded-xl p-4 text-on-surface focus:ring-2 focus:ring-primary/40 transition-all shadow-inner outline-none" 
+                    placeholder={t.vocabPl} 
+                  />
                 </div>
 
-                {error && <div className="text-[#ffb4ab] text-sm bg-[#93000a]/20 p-3 rounded-lg border border-[#93000a]/50">{error}</div>}
+                {error && <div className="text-error text-sm bg-error-container/20 p-4 rounded-xl border border-error/50">{error}</div>}
 
                 <div className="pt-6">
-                  <button type="submit" disabled={loading} className={`w-full flex items-center justify-center gap-3 bg-gradient-to-r from-primary to-primary-container text-on-primary font-bold text-lg py-5 rounded-xl shadow-[0_10px_20px_rgba(244,201,105,0.15)] hover:shadow-[0_10px_25px_rgba(244,201,105,0.25)] hover:brightness-110 transition-all active:scale-[0.98] ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}>
+                  <button 
+                    type="submit" 
+                    disabled={loading} 
+                    className={`w-full flex items-center justify-center gap-3 bg-gradient-to-r from-primary to-primary-container text-on-primary font-bold text-lg py-5 rounded-2xl shadow-[0_10px_20px_rgba(244,201,105,0.15)] hover:shadow-[0_10px_25px_rgba(244,201,105,0.25)] hover:brightness-110 transition-all active:scale-[0.97] ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                  >
                     <span className="material-symbols-outlined text-[24px]">{loading ? 'hourglass_empty' : 'mail'}</span>
                     {loading ? t.btnGenIng : t.btnGen}
                   </button>
@@ -451,20 +556,27 @@ export default function Home() {
             </div>
 
             {result && (
-              <div ref={resultRef} className="mt-8 bg-surface-container rounded-xl p-6 md:p-8 shadow-[0_20px_40px_rgba(0,0,0,0.05)] border border-primary/20">
+              <div ref={resultRef} className="mt-8 bg-surface-container rounded-2xl p-6 md:p-8 shadow-[0_20px_40px_rgba(0,0,0,0.1)] border border-primary/20">
                  <h3 className="font-headline text-2xl text-primary mb-4">{t.resTitle}</h3>
                  
-                 <div className="bg-surface-container-low p-5 rounded-lg border border-outline-variant/20 mb-6">
+                 <div className="bg-surface-container-low p-5 rounded-xl border border-outline-variant/20 mb-6">
                    <pre className="text-on-surface font-body whitespace-pre-wrap text-sm leading-relaxed">{result}</pre>
                  </div>
                  
                  <div className="border-t border-surface-container-highest pt-6">
                    <div className="flex flex-wrap gap-3">
-                     <button onClick={() => navigator.clipboard.writeText(result)} className="flex-1 px-4 py-3 bg-surface-container-highest text-primary rounded-lg text-sm font-bold hover:brightness-110 transition-colors border border-outline-variant/30 flex justify-center items-center gap-2">
+                     <button 
+                       onClick={() => navigator.clipboard.writeText(result)} 
+                       className="flex-1 px-4 py-3 bg-surface-container-highest text-primary rounded-xl text-sm font-bold active:scale-95 hover:brightness-110 transition-all border border-outline-variant/30 flex justify-center items-center gap-2"
+                     >
                        <span className="material-symbols-outlined text-[18px]">content_copy</span> {t.btnCopy}
                      </button>
                      
-                     <button onClick={handleHumanize} disabled={isHumanizing} className={`flex-[1.5] px-4 py-3 bg-transparent text-primary rounded-lg text-sm font-bold hover:bg-primary/10 transition-colors border border-primary/40 flex justify-center items-center gap-2 ${isHumanizing ? 'opacity-70 cursor-not-allowed' : ''}`}>
+                     <button 
+                       onClick={handleHumanize} 
+                       disabled={isHumanizing} 
+                       className={`flex-[1.5] px-4 py-3 bg-transparent text-primary rounded-xl text-sm font-bold active:scale-95 hover:bg-primary/10 transition-all border-2 border-primary/40 flex justify-center items-center gap-2 ${isHumanizing ? 'opacity-70 cursor-not-allowed' : ''}`}
+                     >
                        <span className="material-symbols-outlined text-[18px]">{isHumanizing ? 'sync' : 'psychology_alt'}</span> 
                        {isHumanizing ? t.btnHumIng : t.btnHum}
                      </button>
@@ -483,22 +595,27 @@ export default function Home() {
             </header>
 
             {history.length === 0 ? (
-              <div className="text-center py-20 bg-surface-container-low rounded-xl border border-outline-variant/10">
+              <div className="text-center py-20 bg-surface-container-low rounded-2xl border border-outline-variant/10">
                 <span className="material-symbols-outlined text-6xl text-outline-variant mb-4">inbox</span>
                 <h3 className="text-xl font-headline text-on-surface mb-2">{t.noHist}</h3>
                 <p className="text-on-surface-variant text-sm">{t.noHistSub}</p>
-                <button onClick={() => handleNavClick('generator')} className="mt-6 px-6 py-2 bg-primary-container text-on-primary rounded-lg text-sm font-bold shadow-sm hover:brightness-110">{t.goGen}</button>
+                <button 
+                  onClick={() => handleNavClick('generator')} 
+                  className="mt-6 px-6 py-3 bg-primary-container text-on-primary rounded-xl text-sm font-bold shadow-md hover:brightness-110 active:scale-95 transition-all"
+                >
+                  {t.goGen}
+                </button>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {history.map((item) => (
-                  <article key={item.id} className="bg-surface-container rounded-xl p-7 flex flex-col gap-5 group hover:-translate-y-1 transition-all duration-400 border border-transparent hover:border-primary/20 hover:shadow-[0_10px_40px_-10px_rgba(244,201,105,0.05)] relative overflow-hidden">
+                  <article key={item.id} className="bg-surface-container rounded-2xl p-7 flex flex-col gap-5 group hover:-translate-y-1 transition-all duration-400 border border-transparent hover:border-primary/20 hover:shadow-[0_10px_40px_-10px_rgba(244,201,105,0.05)] relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-primary to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                     
                     <div className="flex justify-between items-start mb-2">
                       <span className="text-[11px] text-on-surface-variant/60 font-body uppercase tracking-widest font-semibold">{item.date}</span>
                       <div className="flex gap-2">
-                        <span className="bg-surface-container-highest text-primary/90 text-[10px] uppercase tracking-widest px-2 py-1 rounded-sm border border-primary/10">{item.level}</span>
+                        <span className="bg-surface-container-highest text-primary/90 text-[10px] uppercase tracking-widest px-2 py-1 rounded-md border border-primary/10">{item.level}</span>
                       </div>
                     </div>
                     
@@ -516,10 +633,18 @@ export default function Home() {
                         </span>
                       </div>
                       <div className="flex gap-1">
-                        <button onClick={() => navigator.clipboard.writeText(item.content)} className="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container-highest rounded-lg transition-colors" title="Copy to clipboard">
+                        <button 
+                          onClick={() => navigator.clipboard.writeText(item.content)} 
+                          className="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container-highest rounded-lg active:scale-90 transition-all" 
+                          title="Copy to clipboard"
+                        >
                           <span className="material-symbols-outlined text-[18px]">content_copy</span>
                         </button>
-                        <button onClick={() => deleteHistoryItem(item.id)} className="p-2 text-on-surface-variant hover:text-error hover:bg-error-container/10 rounded-lg transition-colors" title="Delete">
+                        <button 
+                          onClick={() => deleteHistoryItem(item.id)} 
+                          className="p-2 text-on-surface-variant hover:text-error hover:bg-error-container/10 rounded-lg active:scale-90 transition-all" 
+                          title="Delete"
+                        >
                           <span className="material-symbols-outlined text-[18px]">delete</span>
                         </button>
                       </div>
